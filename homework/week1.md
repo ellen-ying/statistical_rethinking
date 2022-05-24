@@ -5,9 +5,10 @@ Yurun (Ellen) Ying
 
 ## Problems from the book
 
-\###2M3 Two globes: one earth (70% water), one mars (100% land). One is
-tossed (each has the same prob to be tossed). Show that Pr(Earth\|Land)
-= 0.23.
+### 2M3
+
+Two globes: one earth (70% water), one mars (100% land). One is tossed
+(each has the same prob to be tossed). Show that Pr(Earth\|Land) = 0.23.
 
 ``` r
 # prior distribution of earth and mars being tossed
