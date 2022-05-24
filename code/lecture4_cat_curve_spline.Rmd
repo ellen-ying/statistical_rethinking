@@ -175,7 +175,7 @@ W_do_S_auto <- HWsim$W[,2] - HWsim$W[,1]
 
 ## Fit polynomial regressions to the height data
 
-We now include all data points in the Howell daaset. It is obvious that the relaitonship is non-linear.
+We now include all data points in the Howell dataset. It is obvious that the relaitonship is non-linear.
 ```{r}
 data("Howell1")
 d <- Howell1
