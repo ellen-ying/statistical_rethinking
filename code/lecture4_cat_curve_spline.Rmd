@@ -1,0 +1,347 @@
+---
+title: 'Lecture 4: Categories, Curves, and Splines'
+output: github_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Categorical variables and models of more than two variables
+
+A model of weight as influenced by sex. This captures the effect of sex on weight through both paths.
+```{r, message=FALSE}
+library(rethinking)
+data("Howell1")
+d <- Howell1
+d <- d[d$age >= 18, ]
+dat <- list(
+  W = d$weight,
+  S = d$male + 1 # 1 indicates female, 2 indicates male
+)
+
+m_SW <- quap(
+  alist(
+    W ~ dnorm(mu, sigma),
+    mu <- a[S], # this uses index variable
+    a[S] ~ dnorm(60, 10),
+    sigma ~ dunif(0, 10)
+  ),
+  data = dat
+)
+```
+
+Posterior mean W. Males and females have little overlap. But this is just the mean values of weight, and we still need to count for the uncertainty surrounding the actual values of weight.
+```{r}
+post <- extract.samples(m_SW)
+# mean weight of males
+dens(post$a[,1], xlim = c(39, 50), lwd = 3, col = 2, 
+     xlab = "Posterior mean weight (kg)", ylab = "Density")
+# mean weight of females
+dens(post$a[,2], lwd = 3, col = 4, add = TRUE)
+```
+
+Posterior distribution of W. There is great overlap, but overlapping doesn't mean anything yet. We have to check the contrast between males and females' weight values.
+```{r}
+Wf <- rnorm(1000, post$a[,1], post$sigma)
+Wm <- rnorm(1000, post$a[,2], post$sigma)
+# weight distribution of males
+dens(Wf, xlim = c(20, 70), lwd = 3, col = 2, 
+     xlab = "Posterior mean weight (kg)", ylab = "Density")
+# weight distribution of females
+dens(Wm, lwd = 3, col = 4, add = TRUE)
+```
+
+#### Casual contrast of mean weight
+The contrast will preserve the correlation between the two estimates. Always do this as the last step when comparing between categoriecal variables.
+```{r}
+m_contrast <- post$a[,2] - post$a[,1]
+dens(m_contrast, xlim = c(3, 10), lwd = 3, col = 1, 
+     xlab = "Posterior mean weight contrast (kg)", ylab = "Density")
+
+# causal contrast of weight
+w_contrast <- Wm - Wf
+dens(w_contrast, xlim = c(-25, 35), lwd = 3, col = 1, 
+     xlab = "Posterior weight contrast (kg)", ylab = "Density")
+abline(v = 0, col = 2, lwd = 0.5)
+# proportion above and below zero
+sum(w_contrast > 0)/1000
+sum(w_contrast < 0)/1000
+```
+
+#### Add the effect of height to the model
+
+```{r}
+d <- Howell1
+d <- d[d$age >= 18, ]
+dat <- list(
+  W = d$weight,
+  H = d$height,
+  Hbar = mean(d$height),
+  S = d$male + 1 # 1 indicates female, 2 indicates male
+)
+
+m_SHW <- quap(
+  alist(
+    W ~ dnorm(mu, sigma),
+    mu <- a[S] + b[S] * (H - Hbar),
+    a[S] ~ dnorm(60, 10),
+    b[S] ~ dlnorm(0, 1),
+    sigma ~ dunif(0, 10)
+  ),
+  data = dat
+)
+```
+
+We would like to see at each height value, if there is any difference between males and females. This is to isolate the direct effect of sex on weight.
+```{r}
+xseq <- seq(130, 190, len = 50)
+
+muF <- link(
+  m_SHW,
+  data = data.frame(S = rep(1, 50), H = xseq, Hbar = mean(d$height))
+)
+muM <- link(
+  m_SHW,
+  data = data.frame(S = rep(2, 50), H = xseq, Hbar = mean(d$height))
+)
+
+m_contrast <- muF - muM
+plot(NULL, xlim = range(xseq), ylim = c(-6, 8),
+     xlab = "height (cm)", ylab = "mean weight contrast (F-M)")
+for (p in c(0.5, 0.6, 0.7, 0.8, 0.9, 0.99))
+  shade(apply(m_contrast, 2, PI, prob = p), xseq)
+abline(h = 0, lty = 2)
+```
+
+When height is small, male heavier than female. When height is big, female heavier than male. But this effect is small (direct causal effect), meaning that almost all of causal effect of sex on weight is through height.
+
+
+### Alternative: one statistical model and separate simulation
+
+```{r, warning=FALSE}
+m_SHW_full <- quap(
+  alist(
+    # weight
+    W ~ dnorm(mu, sigma),
+    mu <- a[S] + b[S] * (H - Hbar),
+    a[S] ~ dnorm(60, 10),
+    b[S] ~ dlnorm(0, 1),
+    sigma ~ dunif(0, 10),
+    
+    # weight
+    H ~ dnorm(nu, tau),
+    nu <- h[S],
+    h[S] ~ dnorm(160, 10),
+    tau ~ dunif(0, 10)
+  ),
+  data = dat
+)
+# inspect the results, everything is together
+precis(m_SHW_full, depth = 2)
+
+# posterior predicative simulation
+samples <- extract.samples(m_SHW_full)
+n <- 1e4
+Hbar <- dat$Hbar
+
+# the with function do the things in brackets within a data environment
+with(samples, {
+  # simulate W for S1
+  H_S1 <- rnorm(n, h[,1], tau)
+  W_S1 <- rnorm(n,
+                a[,1] + b[,1] * (H_S1 - Hbar),
+                sigma)
+  
+  # simulate W for S2
+  H_S2 <- rnorm(n, h[,2], tau)
+  W_S2 <- rnorm(n,
+                a[,2] + b[,2] * (H_S2 - Hbar),
+                sigma)
+  
+  # compute contrast and create the variable
+  W_do_S <<- W_S2 - W_S1
+})
+
+# an automated way to compute the contrast
+HWsim <- sim(m_SHW_full,
+             data = list(S = c(1,2)),
+             vars = c("H", "W"))
+W_do_S_auto <- HWsim$W[,2] - HWsim$W[,1]
+```
+
+
+## Fit polynomial regressions to the height data
+
+We now include all data points in the Howell daaset. It is obvious that the relaitonship is non-linear.
+```{r}
+data("Howell1")
+d <- Howell1
+plot(d$height ~ d$weight)
+```
+
+### Quadratic curve
+To fit a parabolic curve, we use the following model:
+
+- h~i~ ~ normal(mu~i~, sigma)
+- mu~i~ = a + b~1~x~i~ + b~2~x~i~^2^
+- a ~ normal(178, 20)
+- b~1~ ~ log-normal(0, 1)
+- b~2~ ~ normal(0, 1)
+- sigma ~ uniform(0, 50)
+
+Note here for b~2~, we use normal distribution instead of log-normal because we don't want positive constraints on it.
+
+```{r}
+# standardize the weight
+# this is especially helpful for polynomials
+# because when predictors have very large values, there will be numericl glitches
+d$weight_s <- (d$weight - mean(d$weight)) / sd(d$weight)
+d$weight_s2 <- d$weight_s^2
+
+# fit the model
+m4.5 <- quap(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu <- a + b1*weight_s + b2*weight_s2,
+    a ~ dnorm(178, 20),
+    b1 ~ dlnorm(0, 1),
+    b2 ~ dnorm(0, 1),
+    sigma ~ dunif(0, 50)
+  ),
+  data = d
+)
+precis(m4.5)
+```
+
+To understand the model, we do posterior predicative simulation of the mean and predictions, and then plot them.
+```{r}
+weight.seq <- seq(-2.2, 2, length.out = 30)
+pred_dat <- data.frame(weight_s = weight.seq, weight_s2 = weight.seq^2)
+mu <- link(m4.5, data = pred_dat)
+sim.height <- sim(m4.5, data = pred_dat)
+mu.mean <- apply(mu, 2, mean)
+mu.PI <- apply(mu, 2, PI, prob = .89)
+height.PI <- apply(sim.height,2, PI, prob = .89)
+
+# plot the data, curve, and intervals
+plot(height ~ weight_s, data = d, col = col.alpha(rangi2, 0.5))
+lines(weight.seq, mu.mean)
+shade(mu.PI, weight.seq)
+shade(height.PI, weight.seq)
+```
+
+### Cubic curve
+Let's now fit a higher-order polynomial regression - a cubic regression.
+
+```{r}
+d$weight_s3 <- d$weight_s^3
+
+# fit the model
+m4.6 <- quap(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu <- a + b1*weight_s + b2*weight_s2 + b3*weight_s3,
+    a ~ dnorm(178, 20),
+    b1 ~ dlnorm(0, 1),
+    b2 ~ dnorm(0, 1),
+    b3 ~ dnorm(0, 1),
+    sigma ~ dunif(0, 50)
+  ),
+  data = d
+)
+
+# posterior prediction
+pred_dat <- data.frame(
+  weight_s = weight.seq, 
+  weight_s2 = weight.seq^2,
+  weight_s3 = weight.seq^3
+  )
+mu <- link(m4.6, data = pred_dat)
+sim.height <- sim(m4.6, data = pred_dat)
+mu.mean <- apply(mu, 2, mean)
+mu.PI <- apply(mu, 2, PI, prob = .89)
+height.PI <- apply(sim.height, 2, PI, prob = .89)
+
+# plot the data, curve, and intervals
+plot(height ~ weight_s, data = d, col = col.alpha(rangi2, 0.5))
+lines(weight.seq, mu.mean)
+shade(mu.PI, weight.seq)
+shade(height.PI, weight.seq)
+```
+
+## Splines
+
+We use B-splines to fit the data. B stands for basis function, which has positive values only in a local region. Each basis function has a synthetic variable, which are multiplied by a coefficient and addd together.
+
+```{r}
+data("cherry_blossoms")
+d <- cherry_blossoms
+precis(d)
+```
+
+Fit a B-spline with 15 knots to this data and see the relationship of year and the time when cherry blossoms.
+
+We first constrcut the basis functions.
+```{r}
+d2 <- d[complete.cases(d$doy),] # select complete cases on doy
+num_knots <- 15
+knot_list <- quantile(d2$year, probs = seq(0, 1, length.out = num_knots))
+
+# create basis functions
+library(splines)
+# construct cubic splines
+B <- bs(d2$year, 
+        knots = knot_list[-c(1, num_knots)], # get rid of the first and the last knots
+        degree = 3,
+        intercept = TRUE
+        )
+
+# plot the basis functions
+plot(NULL, xlim = range(d2$year), ylim = c(0, 1),
+     xlab = "year", ylab = "basis")
+for (i in 1:ncol(B)) lines(d2$year, B[,i])
+```
+
+We then use the functions to fit the data. We use the following priors:
+
+- a ~ normal(100, 10)
+- w~j~ ~ normal(0, 10)
+- sigma ~ exponential(1)
+
+Sigma has a prior of a exponential distribution. The mean value of sigma is 1.
+
+```{r}
+m4.7 <- quap(
+  alist(
+    D ~ dnorm(mu, sigma),
+    mu <-  a + B %*% w,
+    a ~ dnorm(100, 10),
+    w ~ dnorm(0, 10),
+    sigma ~ dexp(1)
+  ),
+  data = data.frame(D = d2$doy, B = B),
+  start = list(w = rep(0, ncol(B)))
+)
+precis(m4.7, depth = 2)
+```
+We need to plot the posterior predictions
+```{r}
+# here are the weighted basis functions
+post <- extract.samples(m4.7)
+w <- apply(post$w, 2, mean)
+plot(NULL, xlim = range(d2$year), ylim = c(-6,6),
+     xlab = "year", ylab = "basis * weight")
+for (i in 1:ncol(B)) lines(d2$year, w[i]*B[,i])
+
+# a curve for the mean and its interval
+mu <- link(m4.7)
+mu_mean <- apply(mu, 2, mean)
+mu_PI <- apply(mu, 2, PI, prob = 0.89)
+plot(doy ~ year, data = d2, col = col.alpha(rangi2, 0.3), pch = 16)
+lines(d2$year, mu_mean)
+shade(mu_PI, d2$year)
+```
+
