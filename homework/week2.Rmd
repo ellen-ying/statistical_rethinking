@@ -1,0 +1,372 @@
+---
+title: "Week 2 Homework"
+author: "Yurun (Ellen) Ying"
+date: "5/24/2022"
+output: github_document
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(19990331)
+```
+
+## Problems from the book
+
+### 4M7
+Refit the model `m4.3` without the `xbar`. Compare the covariance of parameters and the posterior predictions.
+
+```{r, message=FALSE}
+library(rethinking)
+data("Howell1")
+d <- Howell1
+d2 <- d[ d$age >= 18,]
+xbar <- mean(d2$weight)
+
+# the original model
+m4.3 <- quap(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu <-  a + b * (weight - xbar),
+    a ~ dnorm(178, 20),
+    b ~ dlnorm(0, 1),
+    sigma ~ dunif(0, 50)
+  ),
+  data = d2
+)
+
+# checkout the model
+precis(m4.3)
+
+# have little covariance due to centering
+round(vcov(m4.3), 3) 
+
+# posterior predictions
+weight.seq <- seq(from = 25, to = 70, by = 1)
+mu <- link(m4.3, data = data.frame(weight = weight.seq))
+mu.mean <- apply(mu, 2, mean) # calculate the mean for each column
+mu.PI <- apply(mu, 2, PI, prob = 0.89)
+sim.height <- sim(m4.3, data = data.frame(weight = weight.seq))
+height.PI <- apply(sim.height, 2, PI, prob = 0.89)
+
+plot(height ~ weight, data = d2, col = col.alpha(rangi2, 0.5))
+lines(weight.seq, mu.mean)
+shade(mu.PI, weight.seq)
+shade(height.PI, weight.seq)
+```
+
+Fit a new model
+
+```{r}
+# the original model
+m4.3_n <- quap(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu <-  a + b * weight,
+    a ~ dnorm(178, 20),
+    b ~ dlnorm(0, 1),
+    sigma ~ dunif(0, 50)
+  ),
+  data = d2
+)
+
+# checkout the model
+precis(m4.3_n)
+
+# have little covariance due to centering
+round(vcov(m4.3_n), 3) 
+
+# posterior predictions
+mu <- link(m4.3_n, data = data.frame(weight = weight.seq))
+mu.mean <- apply(mu, 2, mean) # calculate the mean for each column
+mu.PI <- apply(mu, 2, PI, prob = 0.89)
+sim.height <- sim(m4.3_n, data = data.frame(weight = weight.seq))
+height.PI <- apply(sim.height, 2, PI, prob = 0.89)
+
+plot(height ~ weight, data = d2, col = col.alpha(rangi2, 0.5))
+lines(weight.seq, mu.mean)
+shade(mu.PI, weight.seq)
+shade(height.PI, weight.seq)
+
+```
+
+There is covariance among the parameters when the data is not centered, but there doesn't seem to be much difference between the posterior predictions.
+
+### 4H1
+
+Predict some individuals' height in the Howell data.
+```{r}
+weight.seq <- c(46.95, 43.72, 64.78, 32.59, 54.63)
+mu <- link(m4.3, data = list(weight = weight.seq))
+mu.mean <- apply(mu, 2, mean)
+height_sim <- sim(m4.3, data = list(weight = weight.seq))
+height_PI <- apply(height_sim, 2, PI, 0.89)
+data.frame(
+  Individual = seq(1, 5, 1),
+  weight = weight.seq,
+  expected_height = round(mu.mean, 2),
+  PI89_LL = round(height_PI[1, ], 2),
+  PI89_UL = round(height_PI[2, ], 2)
+)
+```
+### 4H2
+Fit a linear model to the data below the age of 18 in the Howell data
+
+```{r}
+d3 <- d[d$age < 18,]
+xbar <- mean(d3$weight)
+
+# plot the raw data
+plot(height ~ weight, data = d3)
+
+# fit a linear model
+m_4h2 <- quap(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu <- a + b*(weight - xbar),
+    a ~ dnorm(140, 20),
+    b ~ dlnorm(0, 1),
+    sigma ~ dunif(0, 50)
+  ),
+  data = d3
+)
+
+# inspect the model
+precis(m_4h2)
+
+# posterior predictions
+weight_seq <- seq(0, 50, length.out = 30)
+mu <- link(m_4h2, data = data.frame(weight = weight_seq))
+mu_mean <- apply(mu, 2, mean)
+mu_PI <- apply(mu, 2, PI, prob = 0.89)
+h_sim <- sim(m_4h2, data = data.frame(weight = weight_seq))
+h_PI <- apply(h_sim, 2, PI, prob = 0.89)
+plot(height ~ weight, data = d3, col = col.alpha(rangi2, 0.3),
+     xlim = range(weight_seq), ylim = c(50, 160),
+     xlab = "weight (kg)", ylab = "height (cm)")
+lines(weight_seq, mu_mean)
+shade(mu_PI, weight_seq)
+shade(h_PI, weight_seq)
+
+```
+
+A non-linear model seems to fit better to the data. I would add higher-order terms to the model to fit a curve.
+
+
+### 4H3
+
+Fit a model of height and logarithm of body weight in the entire Howell data.
+
+```{r}
+# compute the logarithmof weight
+d$log_w <- log(d$weight)
+xbar <- log(mean(d$weight))
+
+# fit the model
+m_4h3 <- quap(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu <- a + b*(log_w - xbar),
+    a ~ dnorm(140, 20),
+    b ~ dlnorm(0, 1),
+    sigma ~ dunif(0, 50)
+  ),
+  data = d
+)
+
+# inspect the model
+# when weight is multiplied by exp(1), height increases by 47.07cm
+precis(m_4h3)
+
+# posterior prediction
+weight_seq <- seq(0, 65, length.out = 30)
+mu <- link(m_4h3, data = data.frame(log_w = log(weight_seq)))
+mu_mean <- apply(mu, 2, mean)
+mu_PI <- apply(mu, 2, PI, prob = 0.97)
+h_sim <- sim(m_4h3, data = data.frame(log_w = log(weight_seq)))
+h_PI <- apply(h_sim, 2, PI, prob = 0.97)
+plot(height ~ weight, data = d, col = col.alpha(rangi2, 0.3),
+     xlim = range(weight_seq), ylim = c(50, 180),
+     xlab = "weight (kg)", ylab = "height (cm)")
+lines(weight_seq, mu_mean)
+shade(mu_PI, weight_seq)
+shade(h_PI, weight_seq)
+```
+
+Looks like a very very legit model...
+
+
+### 4H4
+
+Prior predicative distribution of the parabolic polynomial regression model.
+
+- h~i~ ~ normal(mu~i~, sigma)
+- mu~i~ = a + b~1~x~i~ + b~2~x~i~^2^
+- a ~ normal(178, 20)
+- b~1~ ~ log-normal(0, 1)
+- b~2~ ~ normal(0, 1)
+- sigma ~ uniform(0, 50)
+
+```{r}
+d$weight_s <- (d$weight - mean(d$weight)) / sd(d$weight)
+n <- 100
+a <- rnorm(n = n, 178, 20)
+b1 <- rlnorm(n = n, 0, 1)
+b2 <- rnorm(n = n, 0, 1)
+plot(NULL, xlim = range(d$weight_s), ylim = c(-100, 300),
+     xlab = "weight (kg)", ylab = "height (cm)")
+for (i in 1:n)
+  curve(
+    a[i] + b1[i]*x + b2[i]*x^2,
+    from = min(d$weight_s), to = max(d$weight_s), 
+    col = col.alpha("black", 0.3), add = TRUE)
+abline(h = 0, lwd = 0.5, lty = 2)
+abline(h = 272, lwd = 0.5, lty = 2)
+```
+
+### 4H5
+
+A linear model of blossom date and temperature.
+```{r}
+data("cherry_blossoms")
+d <- cherry_blossoms
+d2 <- d[complete.cases(d$doy, d$temp),] # select complete cases on doy
+xbar <- mean(d2$temp)
+
+# plot the raw data
+plot(doy ~ temp, data = d2)
+
+# pick priors
+n <- 100
+a <- rnorm(n, 105, 20)
+b <- rnorm(n, 0, 1) 
+plot(NULL, xlim = range(d2$temp), ylim = c(0, 200),
+     xlab = "March temperature", ylab = "Blossom date")
+for (i in 1:n)
+  curve(a[i] + b[i]*x,
+        from = min(d2$temp), to = max(d2$temp),
+        add = TRUE, col = col.alpha("black", 0.3))
+
+# fit the data
+m_4h5 <- quap(
+  alist(
+    doy ~ dnorm(mu, sigma),
+    mu <- a + b*(temp - xbar),
+    a ~ dnorm(105, 20),
+    b ~ dnorm(0, 1),
+    sigma ~ dunif(0, 50)
+  ),
+  data = d2
+)
+
+precis(m_4h5)
+
+# posterior predicative simulation
+temp_seq <- seq(4, 9, length.out = 30)
+mu <- link(m_4h5, data = data.frame(temp = temp_seq))
+mu_mean <- apply(mu, 2, mean)
+mu_PI <- apply(mu, 2, PI, prob = 0.89)
+day_sim <- sim(m_4h5, data = data.frame(temp = temp_seq))
+day_PI <- apply(day_sim, 2, PI, prob = 0.89)
+
+# plot
+plot(doy ~ temp, data = d2, xlim = range(temp_seq), ylim = c(80, 130),
+     xlab = "March temperature", ylab = "Blossom date",
+     col = col.alpha(rangi2, 0.3))
+lines(temp_seq, mu_mean)
+shade(mu_PI, temp_seq)
+shade(day_PI, temp_seq)
+```
+
+Higher temperature predicts earlier days of blossom. The linear model doesn't seem to fit the data very well. A parabolic curve may do the job better.
+
+
+### 4H6
+Prior predicative distribution of the spline model on cherry blossom data.
+```{r}
+d <- cherry_blossoms
+d2 <- d[complete.cases(d$doy),] # select complete cases on doy
+num_knots <- 15
+knot_list <- quantile(d2$year, probs = seq(0, 1, length.out = num_knots))
+
+# create basis functions
+library(splines)
+# construct cubic splines
+B <- bs(d2$year, 
+        knots = knot_list[-c(1, num_knots)], # get rid of the first and the last knots
+        degree = 3,
+        intercept = TRUE
+        )
+
+# priors
+n <- 100
+a <-  rnorm(n, 100, 10)
+w <- rnorm(n, 0, 30)
+
+# plot the prior predicative distribution
+plot(NULL, xlim = range(d2$year), ylim = c(-200, 300),
+     xlab = "year", ylab = "blossom date")
+for (i in 1:n) 
+  lines(d2$year, a[i] + sapply(1:nrow(B), function(j) sum(B[j,] * w[i])),
+         #from = min(d2$year), to = max(d2$year),
+         col = col.alpha("black", 0.3))
+
+```
+
+The prior on weights seem to be specifying the range of the predicted variable.
+
+### 4H8
+Refit the cherry blossom data without the intercept
+```{r}
+# construct cubic splines
+B <- bs(d2$year, 
+        knots = knot_list[-c(1, num_knots)], # get rid of the first and the last knots
+        degree = 3,
+        intercept = TRUE
+        )
+
+# plot the basis functions
+plot(NULL, xlim = range(d2$year), ylim = c(0, 1),
+     xlab = "year", ylab = "basis")
+for (i in 1:ncol(B)) lines(d2$year, B[,i])
+
+# fit the model
+# get the first basis function
+B0 <- B[,1]
+B_rest <- B[,2:ncol(B)]
+
+m_4h8 <- quap(
+  alist(
+    D ~ dnorm(mu, sigma),
+    mu <-  B0 * w0 + B_rest %*% w,
+    w0 ~ dnorm(100, 10),
+    w ~ dnorm(0, 10),
+    sigma ~ dexp(1)
+  ),
+  data = data.frame(D = d2$doy, B0 = B0, B_rest = B_rest),
+  start = list(w = rep(0, ncol(B_rest)))
+)
+
+precis(m_4h8, depth = 2)
+
+# here are the weighted basis functions
+post <- extract.samples(m_4h8)
+w0 <- mean(post$w0)
+w <- apply(post$w, 2, mean)
+plot(NULL, xlim = range(d2$year), ylim = c(-100, 110),
+     xlab = "year", ylab = "basis * weight")
+for (i in 1:ncol(B_rest)) lines(d2$year, w0 * B0 + w[i]*B_rest[,i])
+
+# a curve for the mean and its interval
+mu <- link(m_4h8)
+mu_mean <- apply(mu, 2, mean)
+mu_PI <- apply(mu, 2, PI, prob = 0.89)
+plot(doy ~ year, data = d2, col = col.alpha(rangi2, 0.3), pch = 16)
+lines(d2$year, mu_mean)
+shade(mu_PI, d2$year)
+```
+
+The model is generally identical to the one using an intercept, but there is a small difference where the intercept of the curve lies on the y axis.
+
+## Course homework
