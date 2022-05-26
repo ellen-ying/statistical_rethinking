@@ -55,7 +55,7 @@ dens(Wm, lwd = 3, col = 4, add = TRUE)
 ```
 
 #### Casual contrast of mean weight
-The contrast will preserve the correlation between the two estimates. Always do this as the last step when comparing between categoriecal variables.
+The contrast will preserve the correlation between the two estimates. Always do this as the last step when comparing between categorical variables.
 ```{r}
 m_contrast <- post$a[,2] - post$a[,1]
 dens(m_contrast, xlim = c(3, 10), lwd = 3, col = 1, 
