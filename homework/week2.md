@@ -487,7 +487,384 @@ shade(mu_PI, d2$year)
 ![](week2_files/figure-gfm/unnamed-chunk-9-3.png)<!-- -->
 
 The model is generally identical to the one using an intercept, but
-there is a small difference where the intercept of curve lies on the y
-axis.
+there is a small difference where the intercept of the curve lies on the
+y axis.
 
 ## Course homework
+
+### Problem 1
+
+Construct regression model of weight by height, using the data of adult
+individuals. Use the model to predict 3 individuals’ expected weight and
+89% interval.
+
+``` r
+d <- Howell1
+d <- d[d$age >=18, ]
+xbar <- mean(d$height)
+
+# choose priors and do prior predicative simulation
+n <- 100
+a <- rnorm(n, 55, 10)
+b <- rlnorm(n, 0, 0.2)
+plot(NULL, xlim = range(d$height), ylim = c(0, 100),
+     xlab = "height (cm)", ylab = "weight(kg)")
+for(i in 1:n)
+  curve(
+    a[i] + b[i] * (x - xbar),
+    from = min(d$height), to = max(d$height),
+    col = col.alpha("black", 0.3), add = TRUE
+  )
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+# fit a model
+m_p1 <- quap(
+  alist(
+    weight ~ dnorm(mu, sigma),
+    mu <- a + b * (height - xbar),
+    a ~ dnorm(55, 10),
+    b ~ dlnorm(0, 0.2),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+precis(m_p1)
+```
+
+    ##             mean         sd       5.5%      94.5%
+    ## a     44.9955130 0.22411659 44.6373314 45.3536946
+    ## b      0.6425788 0.02802785  0.5977849  0.6873728
+    ## sigma  4.2058505 0.15719681  3.9546196  4.4570814
+
+``` r
+# posterior predicative simulation
+height_seq <- seq(135, 180, length.out = 50)
+mu <- link(m_p1, data = data.frame(height = height_seq))
+weight_sim <- sim(m_p1, data = data.frame(height = height_seq))
+mu_mean <- apply(mu, 2, mean)
+mu_PI <- apply(mu, 2, PI, prob = 0.89)
+weight_PI <- apply(weight_sim, 2, PI, prob = 0.89)
+plot(weight ~ height, data = d,
+     xlim = range(height_seq), ylim = range(d$weight),
+     xlab = "height (cm)", ylab = "weight(kg)",
+     col = col.alpha(rangi2, 0.3))
+lines(height_seq, mu_mean)
+shade(mu_PI, height_seq)
+shade(weight_PI, height_seq)
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
+
+``` r
+# predict three individuals
+h <- c(140, 160, 175)
+mu <- link(m_p1, data = data.frame(height = h))
+exp_mu <- apply(mu, 2, mean)
+weight_sim <- sim(m_p1, data = data.frame(height = h))
+# can directly take the mean value of the simualted values to get the mean
+weight_PI <- apply(weight_sim, 2, PI, prob = 0.89)
+data.frame(
+  Individual = c(1, 2, 3),
+  height = h,
+  exp_weight = round(exp_mu, 2),
+  PI_LL = round(weight_PI[1, ], 2),
+  PI_UL = round(weight_PI[2, ], 2)
+)
+```
+
+    ##   Individual height exp_weight PI_LL PI_UL
+    ## 1          1    140      35.59 28.49 42.84
+    ## 2          2    160      48.48 41.35 54.76
+    ## 3          3    175      58.14 51.24 64.71
+
+## Problem 2
+
+Using data younger than 13, estimate the total causal effect of age on
+weight.
+
+``` r
+d <- Howell1
+d <- d[d$age < 13, ]
+xbar <- mean(d$age)
+
+# choosing the priors
+n <- 100
+a <- rnorm(n, 20, 5)
+b <- rlnorm(n, 0, 0.3)
+plot(NULL, xlim = range(d$age), ylim = c(0, 50),
+     xlab = "age", ylab = "weight (kg)")
+for (i in 1:100)
+  curve(
+    a[i] + b[i] * (x - xbar),
+    from = min(d$age), to =max(d$age),
+    col = col.alpha("black", 0.3), add = TRUE
+  )
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+# fit the model
+m_p2 <- quap(
+  alist(
+    weight ~ dnorm(mu, sigma),
+    mu <- a + b*(age - xbar),
+    a ~ dnorm(20, 5),
+    b ~ dnorm(0, 0.3),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+precis(m_p2)
+```
+
+    ##            mean         sd      5.5%     94.5%
+    ## a     14.702456 0.20738643 14.371013 15.033900
+    ## b      1.298945 0.05379603  1.212969  1.384922
+    ## sigma  2.507985 0.14549880  2.275450  2.740521
+
+``` r
+# posterior predicative simulation
+age_seq <- seq(0, 13, 1)
+mu <- link(m_p2, data = list(age = age_seq))
+mu_mean <- apply(mu, 2, mean)
+mu_PI <- apply(mu, 2, PI, prob = 0.89)
+weight_sim <- sim(m_p2, data = list(age = age_seq))
+weight_PI <- apply(weight_sim, 2, PI, prob = 0.89)
+plot(weight ~ age, data = d,
+     xlim = range(age_seq), ylim = c(0, 35),
+     xlab = "age", ylab = "weight (kg)",
+     col = col.alpha(rangi2, 0.3))
+lines(age_seq, mu_mean)
+shade(mu_PI, age_seq)
+shade(weight_PI, age_seq)
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
+
+Each year of growth adds to weight by 1.3kg on average.
+
+### Problem 3
+
+``` r
+d_sex <- list(
+  age = d$age,
+  weight = d$weight,
+  sex = d$male + 1
+)
+
+# fit the model for two sexes separately
+m_p3 <- quap(
+  alist(
+    weight ~ dnorm(mu, sigma),
+    mu <- a[sex] + b[sex]*(age - xbar),
+    a[sex] ~ dnorm(20, 5),
+    b[sex] ~ dnorm(0, 0.3),
+    sigma ~ dexp(1)
+  ),
+  data = d_sex
+)
+
+precis(m_p3, depth = 2)
+```
+
+    ##            mean         sd      5.5%     94.5%
+    ## a[1]  14.039744 0.27926548 13.593424 14.486064
+    ## a[2]  15.410492 0.28701692 14.951784 15.869201
+    ## b[1]   1.218156 0.07136362  1.104103  1.332208
+    ## b[2]   1.305143 0.07412184  1.186682  1.423604
+    ## sigma  2.421654 0.14195396  2.194784  2.648524
+
+``` r
+# posterior simulation
+age_seq <- seq(0, 13, 1)
+mu_f <- link(m_p3, data = list(age = age_seq, sex = rep(1, 14)))
+mu_m <- link(m_p3, data = list(age = age_seq, sex = rep(2, 14)))
+m_contrast <- mu_m - mu_f
+plot(NULL, xlim = range(age_seq), ylim = c(-2, 4),
+     xlab = "age", ylab = "weight difference (boys-girls)")
+for (p in c(0.5, 0.6, 0.7, 0.8, 0.9, 0.99))
+  shade(apply(m_contrast, 2, PI, prob = p), age_seq)
+abline(h = 0, lty = 2)
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+At all ages, boys are heavier than girls.
+
+#### Some correction
+
+Correction on contrast.
+
+``` r
+# You can plot the posterior mean to have a rough sense of sex difference.
+plot(weight ~ age, data = d_sex, lwd = 3, col = ifelse(d_sex$sex == 2, 4, 2),
+     xlab = "age", ylab = "weight(kg0")
+age_seq <- seq(0, 13, 1)
+mu_f <- link(m_p3, data = list(age = age_seq, sex = rep(1, 14)))
+lines(age_seq, apply(mu_f, 2, mean), lwd = 3, col = 2)
+shade(apply(mu_f, 2, PI, prob = 0.89), age_seq, col = col.alpha(2, 0.3))
+mu_m <- link(m_p3, data = list(age = age_seq, sex = rep(2, 14)))
+lines(age_seq, apply(mu_m, 2, mean), lwd = 3, col = 4)
+shade(apply(mu_m, 2, PI, prob = 0.89), age_seq, col = col.alpha(4, 0.3))
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+``` r
+# in the contrast, compare the entire weight distribution instead of the expectation
+# boys tend to be heavier than girls, but the distribution overlaps a lot
+sim_f <- sim(m_p3, data = list(age = age_seq, sex = rep(1, 14)))
+sim_m <- sim(m_p3, data = list(age = age_seq, sex = rep(2, 14)))
+m_contrast <- sim_m - sim_f
+plot(NULL, xlim = range(age_seq), ylim = c(-15, 15),
+     xlab = "age", ylab = "weight difference (boys-girls)")
+for (p in c(0.5, 0.6, 0.7, 0.8, 0.9, 0.99))
+  shade(apply(m_contrast, 2, PI, prob = p), age_seq)
+abline(h = 0, lty = 2)
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-13-2.png)<!-- -->
+
+### Problem 4
+
+#### My attempt
+
+Model growth in the `Oxboys` dataset.
+
+``` r
+library(tidyverse)
+data("Oxboys")
+d <- 
+  as_tibble(Oxboys) %>% 
+  select(-age) %>% 
+  pivot_wider(names_from = "Occasion", values_from = "height") %>% 
+  select(-Subject)
+
+# calculate the increments
+ox <- 
+  data.frame(
+    sapply(1:(length(names(d)) - 1),
+           function(i) d[,i+1] - d[,i])
+  ) %>% 
+  pivot_longer(everything(), 
+               names_to = "occasion", names_prefix = "X", values_to = "growth") %>% 
+  mutate(
+    occasion = as.numeric(occasion) - 1
+  )
+
+# check the data
+plot(growth ~ occasion, data = ox)
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+``` r
+# seems good to fit a spline
+library(splines)
+num_knots <- 4
+knot_list <- quantile(ox$occasion, probs = seq(0, 1, length.out = num_knots))
+B <- bs(ox$occasion, 
+        knots = knot_list[-c(1, num_knots)],
+        degree = 3,
+        intercept = TRUE
+        )
+
+# basis function
+plot(NULL, xlim = c(1, 8), ylim = c(0, 1),
+     xlab = "occasion", ylab = "basis")
+for (i in 1:ncol(B)) lines(ox$occasion, B[, i])
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
+
+``` r
+# choose priors
+n <- 100
+a <- rnorm(n, 3, 1)
+w <- rlnorm(n, 0, 0.7)
+plot(NULL, xlim = c(1, 8), ylim = c(-2, 6),
+     xlab = "occasion", ylab = "growth")
+for (i in 1:n)
+  lines(ox$occasion, 
+        sapply(1:nrow(B), function(j) sum(B[j,] * w[i])),
+        col = col.alpha("black", 0.3))
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-14-3.png)<!-- -->
+
+``` r
+# fit the model
+m_p4 <- quap(
+  alist(
+    growth ~ dnorm(mu, sigma),
+    mu ~ a + B %*% w,
+    a ~ dnorm(3, 1),
+    w ~ dlnorm(0, 0.7),
+    sigma ~ dexp(1)
+  ),
+  data = data.frame(growth = ox$growth, B = B),
+  start = list(w = rep(1, ncol(B)))
+)
+
+# weight basis functions
+post <- extract.samples(m_p4)
+mu_mean <- apply(post$w, 2, mean)
+plot(NULL, xlim = c(1, 8), ylim = c(0, 5),
+     xlab = "occasion", ylab = "basis")
+for (i in 1:ncol(B)) lines(ox$occasion, B[, i] * w[i])
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-14-4.png)<!-- -->
+
+``` r
+# posterior
+mu <- link(m_p4)
+mu_mean <- apply(mu, 2, mean)
+mu_PI <- apply(mu, 2, PI, prob = 0.89)
+plot(growth ~ occasion, data = ox, col = col.alpha(rangi2, 0.3), pch = 16,
+     xlim = c(1, 8), ylim = c(0, 5),
+     xlab = "occasion", ylab = "growth")
+lines(ox$occasion, mu_mean)
+shade(mu_PI, ox$occasion)
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-14-5.png)<!-- -->
+
+Doesn’t seem to make sense…
+
+#### More legit answer
+
+This is really only a problem of modeling one variable.
+
+``` r
+m_p4 <- quap(
+  alist(
+    growth ~ dlnorm(alpha, sigma),
+    alpha ~ dnorm(0, 0.1),
+    sigma ~ dexp(3)
+  ),
+  data = ox
+)
+
+# posterior distribution
+post <- extract.samples(m_p4)
+dsim <- rlnorm(1e4, post$alpha, post$sigma)
+dens(dsim)
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+``` r
+# sum over 8 occassions of growth
+inc_sum <- 
+  sapply(1:1000,
+         function(s) sum(rlnorm(8, post$alpha[s], post$sigma[s])))
+dens(inc_sum)
+```
+
+![](week2_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->
