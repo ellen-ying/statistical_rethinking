@@ -1,0 +1,323 @@
+---
+title: 'Lecture 5: Elemental Confounds'
+author: "Yurun (Ellen) Ying"
+date: "5/27/2022"
+output: github_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dagitty)
+library(rethinking)
+```
+
+## Elemental confounds - an example
+
+Selection can create spurious correlation (selection-distortion effect). For example, newsworthiness and trustworthiness seem to be negatively associated since they go through the grant selection process. A simulation will illustrate:
+
+```{r}
+set.seed(1914)
+N <- 200 # num grant proposals
+p <- 0.1 # proportion to be selected
+# uncorrelated newsworthiness and trustworthiness
+nw <- rnorm(N)
+tw <- rnorm(N)
+# combined score and select top 10%
+s <- nw + tw
+q <- quantile(s, 1-p) # top 10% threshold
+selected <- ifelse(s > q, TRUE, FALSE)
+cor(nw[selected], tw[selected])
+
+# plot
+plot(nw[selected], tw[selected], col = rangi2, pch = 16,
+     xlim = range(nw), ylim = range(tw),
+     xlab = "newsworthiness", ylab = "trustworthiness")
+points(nw[!selected], tw[!selected], col = "gray", pch = 16)
+```
+
+When this happens in statistical models, it's called collider bias.
+
+
+## Multicollinearity
+
+Multicollinearity is very strong association between two or more variables. Notice that association matters here, not pairwise correlation. The consequence is that posterior distribution says none of the variables are reliably associated with the outcomes, but in fact they are
+
+```{r}
+data("milk")
+d <- milk
+# standardize
+d$K <- standardize(d$kcal.per.g)
+d$F <- standardize(d$perc.fat) 
+d$L <- standardize(d$perc.lactose)
+
+# bivariate regression models
+# kcal regressed on fat
+m6.3 <- quap(
+  alist(
+    K ~ dnorm(mu, sigma),
+    mu <- a + bF*F,
+    a ~ dnorm(0, 0.2),
+    bF ~ dnorm(0, 0.5),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+# kcal regressed on lactose
+m6.4 <- quap(
+  alist(
+    K ~ dnorm(mu, sigma),
+    mu <- a + bL*L,
+    a ~ dnorm(0, 0.2),
+    bL ~ dnorm(0, 0.5),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+precis(m6.3)
+precis(m6.4)
+```
+
+We can see both predictors have very strong associations with kcal. Now let's see what will happen with they are in the same model.
+
+```{r}
+m6.5 <- quap(
+  alist(
+    K ~ dnorm(mu, sigma),
+    mu <- a + bF*F+ bL*L,
+    a ~ dnorm(0, 0.2),
+    bF ~ dnorm(0, 0.5),
+    bL ~ dnorm(0, 0.5),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+precis(m6.5)
+```
+Posterior means of the bF and bL are closer to mean and their sd gets larger.
+
+This is because regression model essentially asks the question: what is the additional value you get from knowing one variable, given that you already know other variable? If two variables contain the same/very similar information, the parameter estimates will act weird (but the prediction still works fine).
+
+In the case of milk, the cause of fat and lactose are almost perfectly correlated is because some third variable causing them both. Maybe a good idea to measure this variable instead of using a regression model.
+
+
+## Post-treatment bias
+
+This happens when you put the variable which is a result of your treatment in your model. More generally, this is a type of confounder that is called "the pipe".
+
+We will simulate a dataset to see this bias.
+
+```{r}
+set.seed(71)
+# number of plants
+n <- 100
+
+# simulate the initial heights
+h0 <- rnorm(n, 10, 2)
+
+# assign treatment and simulate fungus and growth
+treatment <- rep(0:1, each = n/2)
+fungus <- rbinom(n, size = 1, prob = 0.5 - treatment*0.4)
+h1 <- h0 + rnorm(n, 5-3*fungus)
+
+# compose a clean data frame
+d <- data.frame(h0 = h0, 
+                h1 = h1, 
+                treatment = treatment, 
+                fungus = fungus) 
+precis(d)
+```
+
+```{r}
+# A model of height variables
+# p = h1/h0 which is always larger than 0
+m6.6 <- quap(
+  alist(
+    h1 ~ dnorm(mu, sigma),
+    mu <- h0 * p,
+    p ~ dlnorm(0, 0.25),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+# this is a model of average growth rate of plants
+precis(m6.6)
+
+# now a linear model of p
+m6.7 <- quap(
+  alist(
+    h1 ~ dnorm(mu, sigma),
+    mu <- h0 * p,
+    p <- a + bt * treatment + bf * fungus,
+    a ~ dlnorm(0, 0.2),
+    bt ~ dnorm(0, 0.5),
+    bf ~ dnorm(0, 0.5),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+precis(m6.7)
+```
+
+In this model, treatment does not have an effect while fungus has negative impact on plants' growth. This is because all the effects of treatment on plants go through fungus. Once fungus is include, treatment will have little or not effect (which exactly means your treatment works). This model makes ok predictions but does not make causal sense.
+
+```{r}
+# a better model
+m6.8 <- quap(
+  alist(
+    h1 ~ dnorm(mu, sigma),
+    mu <- h0 * p,
+    p <- a + bt * treatment,
+    a ~ dlnorm(0, 0.2),
+    bt ~ dnorm(0, 0.5),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+precis(m6.8)
+```
+
+Illustrate the causal relations through DAG
+```{r}
+plant_dag <- 
+  dagitty( "dag {H_0 -> H_1 
+            F -> H_1
+            T -> F
+          }")
+
+coordinates(plant_dag) <- 
+  list( x=c(H_0=0, T=2, F=1.5, H_1=1),
+        y=c(H_0=0, T=0, F=0, H_1=0) )
+
+drawdag(plant_dag)
+
+# the conditional independencies also say 
+# when conditioned on F, H1 and T are independent
+impliedConditionalIndependencies(plant_dag)
+```
+
+
+## Collider bias
+
+### A simple example
+
+We will see an example where happiness and age both lead to higher levels of marriage. Happiness and age are in fact independent of each other, but when we include marriage in the statistical model, we will see they are negative associated.
+
+```{r}
+# a DAG
+hma <- dagitty("dag { H -> M <- A }")
+coordinates(hma) <- list(x = c(H = 0, M = 0.5, A = 1),
+                         y = c(H = 0, M = 0, A = 0))
+drawdag(hma)
+
+# do a fancy ABM to generate the data
+d <- sim_happiness(seed=1977 , N_years=1000) 
+precis(d)
+d2 <- d[d$age > 17,] # select adults
+d2$A <- (d2$age - 18)/(65 - 18) # standardize so that 18-65 is one unit
+d2$mid <- d2$married + 1 # 1 = unmarried, 2 = married
+
+# fit a model including marriage status
+m6.9 <- quap(
+  alist(
+    happiness ~ dnorm(mu, sigma),
+    mu <- a[mid] + bA*A,
+    # happiness ranges from -2 to 2
+    # this prior allows 95% to lie in this range
+    a[mid] ~ dnorm(0, 1),
+    # the maximum value of the slope is 4
+    # this prior allows 95% of the slope to lie within a plausible range
+    bA ~ dnorm(0, 2), 
+    sigma ~ dexp(1)
+  ),
+  data = d2
+)
+
+precis(m6.9, depth = 2)
+```
+
+This result causally implies that age has a negative impact on happiness, but we know if fact there is no such causal effect. This is because marriage status is collider and we don't want it in out model.
+
+```{r}
+# a better model
+m6.10 <- quap(
+  alist(
+    happiness ~ dnorm(mu, sigma),
+    mu <- a + bA*A,
+    a ~ dnorm(0, 1), 
+    bA ~ dnorm(0, 2), 
+    sigma ~ dexp(1)
+  ),
+  data = d2
+)
+
+precis(m6.10)
+```
+
+###  When DAG is haunted
+
+There are situations in which we need to control a variable, but there are some unmeasured ones making it a collider. In these cases, controling for this variable is dangerous.
+
+```{r}
+# A DAG
+gpc <- 
+  dagitty("dag { G -> P -> C; G -> C;
+          U -> P; U -> C}")
+coordinates(gpc) <- list(x = c(G = 0, P = 0.5, C = 0.5, U = 0.7),
+                         y = c(G = 0, P = 0, C = 0.5, U = 0.25))
+drawdag(gpc)
+
+# simulate this causal DAG to get some data
+N <- 200 # number of grandparent-parent-child triads 
+b_GP <- 1 # direct effect of G on P
+b_GC <- 0 # direct effect of G on C
+b_PC <- 1 # direct effect of P on C
+b_U <- 2 #direct effect of U on P and C
+
+set.seed(1)
+U <- 2*rbern(N, 0.5) - 1 # a binary variable for U
+G <- rnorm(N)
+P <- rnorm(N, b_GP*G + b_U*U)
+C <- rnorm(N, b_GC*G + b_PC*P + b_U*U)
+d <- data.frame( C=C , P=P , G=G , U=U )
+
+# a model of C regressed on G and P
+m6.11 <- quap(
+  alist(
+    C ~ dnorm(mu, sigma),
+    mu <- a + b_GC*G + b_PC*P,
+    a ~ dnorm(0, 1), 
+    c(b_PC,b_GC) ~ dnorm(0, 1),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+precis(m6.11)
+```
+
+This doesn't seem very correct. The effect of parents' edu on child's edu is twice as its true value, and the effect of grandparents' edu is negative, which should be zero. This is the consequence of including P in the model, which is made a collider by the unobserved variable U.
+
+```{r}
+# a better model is to measure U and include it
+m6.12 <- quap(
+  alist(
+    C ~ dnorm(mu, sigma),
+    mu <- a + b_GC*G + b_PC*P + b_U*U,
+    a ~ dnorm(0, 1), 
+    c(b_PC,b_GC,b_U) ~ dnorm(0, 1),
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+# now these estimates are what we expect
+precis(m6.12)
+```
+
