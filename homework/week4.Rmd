@@ -1,0 +1,548 @@
+---
+title: "Week 4 Homework"
+author: "Yurun (Ellen) Ying"
+date: '2022-06-08'
+output: github_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(rethinking)
+```
+
+## Course homework
+
+### Problem 1
+
+Marriage, age, happiness collider.
+
+```{r, include=FALSE}
+# do a fancy ABM to generate the data
+d <- sim_happiness(seed=1977 , N_years=1000) 
+precis(d)
+d2 <- d[d$age > 17,] # select adults
+d2$A <- (d2$age - 18)/(65 - 18) # standardize so that 18-65 is one unit
+d2$mid <- d2$married + 1 # 1 = unmarried, 2 = married
+```
+
+The causal model we assume is H -> M <- A.
+
+```{r}
+# fit a model including marriage status
+m6.9 <- quap(
+  alist(
+    happiness ~ dnorm(mu, sigma),
+    mu <- a[mid] + bA*A,
+    # happiness ranges from -2 to 2
+    # this prior allows 95% to lie in this range
+    a[mid] ~ dnorm(0, 1),
+    # the maximum value of the slope is 4
+    # this prior allows 95% of the slope to lie within a plausible range
+    bA ~ dnorm(0, 2), 
+    sigma ~ dexp(1)
+  ),
+  data = d2
+)
+precis(m6.9, 2)
+
+# a better model
+m6.10 <- quap(
+  alist(
+    happiness ~ dnorm(mu, sigma),
+    mu <- a + bA*A,
+    a ~ dnorm(0, 1), 
+    bA ~ dnorm(0, 2), 
+    sigma ~ dexp(1)
+  ),
+  data = d2
+)
+
+precis(m6.10)
+```
+
+Compare the two models
+
+```{r}
+# compare using PSIS
+compare(m6.9, m6.10, func = PSIS)
+
+# compare using WAIC
+compare(m6.9, m6.10, func = WAIC)
+```
+
+According to both criteria, m6.9 makes better predictions, and the difference between the two models is reliably different from zero. According to the causal model, however, m6.9 gives biased estimation of the association between age and happiness. It gives a negative and a positive association for the data of unmarried and married people, respectively, but in fact there is no association between age and happiness in the entire sample.
+
+**Correction on the interpretation of coefficients of the model:** bA is biased by the collider effect, so it's not any kind of causal effect. a[1] and a[2] measure the association between marriage and happiness, but also biased (the mean happiness value among married and unmarried people when age is 18).
+
+### Problem 2
+
+```{r, include=FALSE}
+# read data
+data("foxes")
+d1 <- foxes
+
+# standardize variables
+d1$A <- standardize(d1$area)
+d1$F <- standardize(d1$avgfood)
+d1$W <- standardize(d1$weight)
+d1$G <- standardize(d1$groupsize)
+```
+
+Let's fit 4 models for the outcome W.
+
+```{r}
+# regressed on F
+m2.1 <- quap(
+  alist(
+    W ~ dnorm(mu, sigma),
+    mu <- a + bF * F,
+    a ~ dnorm(0, 0.4),
+    bF ~ dnorm(0, 0.4),
+    sigma ~ dexp(1)
+  ),
+  data = d1
+)
+
+# regressed on F
+m2.2 <- quap(
+  alist(
+    W ~ dnorm(mu, sigma),
+    mu <- a + bG * G,
+    a ~ dnorm(0, 0.4),
+    bG ~ dnorm(0, 0.4),
+    sigma ~ dexp(1)
+  ),
+  data = d1
+)
+
+# regressed on both F and G
+m2.3 <- quap(
+  alist(
+    W ~ dnorm(mu, sigma),
+    mu <- a + bF * F + bG * G,
+    a ~ dnorm(0, 0.4),
+    bF ~ dnorm(0, 0.4),
+    bG ~ dnorm(0, 0.4),
+    sigma ~ dexp(1)
+  ),
+  data = d1
+)
+
+# regressed on A, F G
+m2.4 <- quap(
+  alist(
+    W ~ dnorm(mu, sigma),
+    mu <- a + bF * F + bG * G + bA*A,
+    a ~ dnorm(0, 0.4),
+    c(bF,bG,bA) ~ dnorm(0, 0.4),
+    sigma ~ dexp(1)
+  ),
+  data = d1
+)
+
+precis(m2.1)
+precis(m2.2)
+precis(m2.3)
+precis(m2.4)
+```
+
+Compare the four models using PSIS and WAIC scores
+
+```{r}
+com_PSIS <- compare(m2.1, m2.2, m2.3, m2.4, func = PSIS)
+com_WAIC <- compare(m2.1, m2.2, m2.3, m2.4, func = WAIC)
+plot(com_PSIS); plot(com_WAIC)
+```
+
+Both criteria show that m2.4 including all three predictors make better predictions. But the difference between this model and the model only including F and G is small. Based on the causal model, the estimation of the coefficient of F may be lower than the actual value because of controlling A.
+
+**Addition:** 
+
+- bF measures the direct causal effect of F on W, but is not complete because A is also in the model.
+- bA is weird here since we are controlling for the mediator F, so there should really be no association between A and W. This can indicate that there's some problem with the causal model, or it's a fluke of the sample.
+
+### Problem 3
+
+Cherry blossom data and use `temp` to predict `doy`.
+
+```{r}
+data("cherry_blossoms")
+d <- cherry_blossoms[complete.cases(cherry_blossoms),]
+d$doy_std <- d$doy / max(d$doy) # scale day-in-year into the range of 0-1
+d$temp_std <- d$temp - mean(d$temp) # 0 represents the sample mean
+
+m3.1 <- quap(
+  alist(
+    doy_std ~ dnorm(mu, sigma),
+    mu <- a + b*temp_std,
+    a ~ dnorm(0.5, 0.25), # when temp is at the mean, doy is at 0.5
+    b ~ dnorm(0, 0.1), # the possible range of the slope is roughly -0.3 to 0.3
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+# check the priors
+# they are a bit wide so let's try to use more regularizing priors
+prior <- extract.prior(m3.1)
+temp_seq <- seq(-1.5, 2.5, length.out = 30)
+mu <- link(m3.1, post = prior, data = list(temp_std = temp_seq))
+plot(NULL, xlim = range(temp_seq), ylim = c(-0.5,1.5),
+     xlab = "March temperature", ylab = "day-in-year of blossom")
+abline(h = 0, lty = 2)
+abline(h = 1, lty = 2)
+for(i in 1:100) {
+  lines(temp_seq, mu[i,], col = col.alpha("black", 0.3))
+}
+```
+
+```{r}
+# official fit
+m3.1 <- quap(
+  alist(
+    doy_std ~ dnorm(mu, sigma),
+    mu <- a + b*temp_std,
+    a ~ dnorm(0.5, 0.25), # when temp is at the mean, doy is at 0.5
+    b ~ dnorm(0, 0.1), # the possible range of the slope is roughly -0.3 to 0.3
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+# including a quadratic term
+m3.2 <- quap(
+  alist(
+    doy_std ~ dnorm(mu, sigma),
+    mu <- a + b1*temp_std + b2*temp_std^2,
+    a ~ dnorm(0.5, 0.25), 
+    c(b1,b2) ~ dnorm(0, 0.1), 
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+
+# including a third-order polynomial
+m3.3 <- quap(
+  alist(
+    doy_std ~ dnorm(mu, sigma),
+    mu <- a + b1*temp_std + b2*temp_std^2 + b3*temp_std^3,
+    a ~ dnorm(0.5, 0.25), 
+    c(b1,b2,b3) ~ dnorm(0, 0.1), 
+    sigma ~ dexp(1)
+  ),
+  data = d
+)
+```
+
+```{r, include=FALSE}
+# A function to plot the posterior predictions
+cherry_plot <- function(model){
+  temp_seq <- seq(-1.5, 2.5, length.out = 30)
+  mu <- link(model, data = list(temp_std = temp_seq))
+  mu_mean <- apply(mu, 2, mean)
+  mu_PI <- apply(mu, 2, PI, prob = .97)
+  plot(doy_std ~ temp_std, data = d, col = col.alpha(rangi2, 0.5), 
+       xlim = range(temp_seq), ylim = c(0.6,1),
+       xlab = "March temperature", ylab = "day-in-year of blossom")
+  lines(temp_seq, mu_mean)
+  shade(mu_PI, temp_seq)
+  mtext(paste("Model:", deparse(substitute(model))))
+}
+```
+
+Plot to see the results
+
+```{r}
+par(mfrow = c(2,2))
+cherry_plot(m3.1)
+cherry_plot(m3.2)
+cherry_plot(m3.3)
+```
+
+Compare the models
+```{r}
+compare(m3.1, m3.2, m3.3, func = PSIS)
+```
+
+The model that makes best prediction is the linear model of day in the year. The differences among these models are small.
+
+When the March temp is 9 degree, let `m3.1` make the prediction of day-in-year of cherry blossom.
+```{r}
+temp <- 9 - mean(d$temp)
+mu <- link(m3.1, data = list(temp_std = temp))
+mu <- mu * max(d$doy)
+mean(mu); sd(mu)
+```
+
+The model predicts that when the March temperature is 9 degree, it will be around day 96 for the cherry to blossom.
+
+
+### Problem 4
+
+```{r}
+data("Dinosaurs")
+d <- Dinosaurs
+# choose Apatosaurus excelsus
+d <- d[d$species == "Apatosaurus excelsus",]
+# standardize
+d$age_std <- standardize(d$age)
+d$mass_std <- standardize(d$mass)
+
+# fit a linear model
+m4.1 <- quap(
+  alist(
+    mass_std ~ dnorm(mu, sigma),
+    mu <- a + b*age_std,
+    a ~ dnorm(0, 0.5), # need 0 for the mass at mean age
+    b ~ dnorm(1, 0.5), # also need a positive number - dinosaurs don't shrink
+    sigma ~ dexp(1)
+  ), data = d
+)
+
+# check the priors
+age_seq <- seq(-1.5, 1.5, length.out = 30)
+prior <- extract.prior(m4.1)
+mu <- link(m4.1, post = prior, data = list(age_std = age_seq))
+plot(NULL, xlim = range(d$age_std), ylim = c(-1.5,1.5),
+     xlab = "Age", ylab = "Body mass")
+abline(h = min(d$mass_std), lty = 2)
+abline(h = max(d$mass_std), lty = 2)
+for(i in 1:100) {
+  lines(age_seq, mu[i,], col = col.alpha("black", 0.3))
+}
+```
+
+Official fit
+
+```{r}
+# a linear model
+m4.1 <- quap(
+  alist(
+    mass_std ~ dnorm(mu, sigma),
+    mu <- a + b*age_std,
+    a ~ dnorm(0, 0.5), # need 0 for the mass at mean age
+    b ~ dnorm(1, 0.5), # also need a positive number - dinosaurs don't shrink
+    sigma ~ dexp(1)
+  ), data = d
+)
+
+# add a quadratic term
+m4.2 <- quap(
+  alist(
+    mass_std ~ dnorm(mu, sigma),
+    mu <- a + b1*age_std + b2*age_std^2,
+    a ~ dnorm(0, 0.5),
+    c(b1, b2) ~ dnorm(1, 0.5), 
+    sigma ~ dexp(1)
+  ), data = d
+)
+
+precis(m4.1)
+precis(m4.2)
+```
+
+```{r, include=FALSE}
+d_plot <- function(model){
+  age_seq <- seq(-1.5, 1.5, length.out = 30)
+  mu <- link(model, data = list(age_std = age_seq))
+  mu_mean <- apply(mu, 2, mean)
+  mu_PI <- apply(mu, 2, PI, prob = .97)
+  plot(mass_std ~ age_std, data = d, col = rangi2, 
+       xlim = range(d$age_std), ylim = c(-1.5,1.5),
+       xlab = "Age", ylab = "Body mass")
+  lines(temp_seq, mu_mean)
+  shade(mu_PI, temp_seq)
+  mtext(paste("Model:", deparse(substitute(model))))
+}
+```
+
+```{r}
+# visually check the results
+par(mfrow = c(1, 2))
+d_plot(m4.1); d_plot(m4.2)
+```
+
+Compare models...?
+
+```{r}
+#compare(m4.1, m4.2, func = PSIS)
+```
+
+Why warnings...?
+
+
+```{r}
+set.seed(1999)
+n_sample <- 1000
+post <- extract.samples(m4.1)
+# seems like this the samples give negative values for sigma
+# let's try to get rid of these rows
+post <- post[-which(post$sigma < 0), ]
+n_sample <- nrow(post)
+
+# the log likelihood of each point
+log_prob <- sapply(1:n_sample, 
+                   function(i){
+                     mu <- post$a[i] + post$b[i] * d$age_std
+                     dnorm(d$mass_std, mean = mu, sd = post$sigma[i], log = TRUE)
+                   })
+lppd_point <- sapply(1:nrow(d), function(i) log_sum_exp(log_prob[i,]) - log(n_sample))
+pWAIC <- sapply(1:nrow(d), function(i) var(log_prob[i,]))
+
+lppd <- -2*(sum(lppd_point) - sum(pWAIC))
+
+waic_vec <-  -2*(lppd_point - pWAIC)
+std <- sqrt(nrow(d)*var(waic_vec))
+data.frame(WAIC = lppd, std = std)
+```
+
+
+This looks like something utterly and completely wrong
+
+There are some small sigma values in the posterior sample, and they returns negative log-likelihood of very big absolute values. This is where the monstrous WAIC comes from.
+
+A guess: maybe using quadratic approximation to fit a model to a too small dataset can cause problem...
+
+### Try MCMC
+
+```{r}
+# standardize to a new value
+d$mass_std <- d$mass / max(d$mass)
+dd <- list(A = d$age, M = d$mass_std)
+
+m4.3 <- ulam(
+   alist(
+     M ~ dnorm(mu, sigma),
+     mu <- a + b*A,
+     a ~ dnorm(0, 1), 
+     b ~ dnorm(0, 1), 
+     sigma ~ dexp(1)
+   ), data = dd, log_lik = TRUE,
+   chains = 4, cores = 4
+ )
+```
+
+```{r, include=FALSE}
+# define a function for plotting
+d_plot2 <- function(model) {
+  age_seq <- seq(0, 16, length.out = 30)
+  mu <- link(model, data = list(A = age_seq))
+  mu_mean <- apply(mu, 2, mean)
+  mu_PI <- apply(mu, 2, PI, prob = .97)
+  plot(M ~ A, data = dd, col = rangi2, 
+       xlim = range(age_seq), ylim = c(0,1),
+       xlab = "Age", ylab = "Body mass")
+  lines(age_seq, mu_mean)
+  shade(mu_PI, age_seq)
+  mtext(paste("Model:", deparse(substitute(model))))
+}
+```
+
+```{r}
+# plot the posterior prediction
+d_plot2(m4.3)
+```
+
+
+Not too bad but somehow can be done better? Since this model doesn't make biological sense.
+
+### Big-brain solution
+
+A classical growth model of body mass in biology is the von Bertalanffy model. It says the organism grows at a rate:
+
+$\frac{dM}{dA} = b (k - M)$
+
+where $b$ is a constant indicating rate and $k$ is the maximum adult size. Solving this differential equation yields:
+
+$M(A) = k ( 1 - e^{-bA})$
+
+Use this eqution to fit the data
+
+```{r}
+m4.4 <- ulam(
+   alist(
+     M ~ dnorm(mu, sigma),
+     mu <- k*(1 - exp(-b*A)),
+     k ~ dnorm(1, 0.5), 
+     b ~ dexp(1), 
+     sigma ~ dexp(1)
+   ), data = dd, log_lik = TRUE,
+   chains = 4, cores = 4
+ )
+
+d_plot2(m4.4)
+```
+
+This one looks worse than the linear model...The problem is that the growth before age 5 is slow and then accelerate. We will use this function to give the body mass:
+
+$M(A) = k ( 1 - e^{-bA})^a$
+
+where a is a value above 1 that determines how proportional growth accelerates with age. (In the differential equation, $b$ is no longer a constant but a function of A)
+
+```{r}
+m4.5 <- ulam(
+   alist(
+     M ~ dnorm(mu, sigma),
+     mu <- k*(1 - exp(-b*A))^a,
+     k ~ dnorm(1, 0.5), 
+     b ~ dexp(1), 
+     a ~ dexp(0.1),
+     sigma ~ dexp(1)
+   ), data = dd, log_lik = TRUE,
+   chains = 4, cores = 4
+ )
+
+d_plot2(m4.5)
+```
+
+Looks like very legit!
+
+Now compare the three models
+
+```{r}
+compare(m4.3, m4.4, m4.5, func = PSIS)
+```
+
+
+The last model is the best. But there are some influential cases in the data.
+
+Now let's fit the model for all dinosaurs at the same time
+
+```{r}
+# scale body mass for each species
+d <- Dinosaurs
+d$Ms <- sapply(1:nrow(d), 
+               function(i) d$mass[i]/max(d$mass[d$sp_id == d$sp_id[i]]))
+dd <- list(A = d$age, M = d$Ms, S = d$sp_id)
+
+m4.6 <- ulam(
+   alist(
+     M ~ dnorm(mu, sigma),
+     mu <- k[S]*(1 - exp(-b[S]*A))^a[S],
+     k[S] ~ dnorm(1, 0.5), 
+     b[S] ~ dexp(1), 
+     a[S] ~ dexp(0.1),
+     sigma ~ dexp(1)
+   ), data = dd, log_lik = TRUE,
+   chains = 4, cores = 4
+ )
+
+age_seq <- seq(0, 16, length.out = 30)
+plot(NULL, xlim = c(0, max(d$age)), ylim = c(0,1.5),
+       xlab = "Age", ylab = "Body mass")
+# plot them all together
+for (i in 1:max(d$sp_id)){
+  
+  # plot the raw data
+  points(d$Ms[d$sp_id == i] ~ d$age[d$sp_id == i], lwd = 3, col = i, add = TRUE)
+  
+  # plot the curve and confidence interval
+  mu <- link(m4.6, data = data.frame(A = age_seq, S = i))
+  lines(age_seq, apply(mu, 2, mean), lwd = 2, col = i, add = TRUE)
+  shade(apply(mu, 2, PI, 0.89), age_seq, col = col.alpha(i, 0.1))
+}
+```
+
+This looks like a fox having many tails...
