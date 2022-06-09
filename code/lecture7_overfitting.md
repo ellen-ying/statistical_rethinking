@@ -39,7 +39,7 @@ outcome_var <- var2(d$brain_std)
 1 - resid_var / outcome_var
 ```
 
-    ## [1] 0.4774595
+    ## [1] 0.477459
 
 ``` r
 # plot the model
@@ -159,6 +159,131 @@ A problem with R<sup>2</sup> in the context of Bayesian statistics is
 that it only deals with the predictions of the means. This is bad
 because this throws away information in the posterior distribution.
 
+## The concept of information criteria
+
+### Measuring accuracy
+
+The first thing we need to know is how to measure the predictive
+accuracy of some prediction methods. The logical way is to choose a
+measurement that is maximized when we know the true data generating
+model. This is the joint likelihood of a prediction being correct for a
+sequence of data. Let’s try a simulation.
+
+``` r
+# there is a 30% likelihood of raining 
+set.seed(1999)
+days <- 100
+# get a sequence of weather
+weather <- c(rep(1, days*0.3), rep(0, days*0.7))
+# the joint likelihood of being right when using different predictions
+pred_rain <- seq(0, 1, length.out = days)
+joint_l <- pred_rain^(sum(weather)) * (1 - pred_rain)^(days - sum(weather))
+# we can see the joint likelihood is maximized when the prediction is the same as the true model
+plot(pred_rain, joint_l, type = "l",
+     xlab = "prediction", ylab = "joint likelihood")
+abline(v = 0.3, col = 2)
+```
+
+![](lecture7_overfitting_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+In statistics literature, people usually report the logarithm of the
+joint probability. This is called **log scoring rule**.
+
+### The distance from the target and uncertainty
+
+The next thing we need to do is to know how far is our prediction from
+our target - the true model. From the perspective of information theory,
+this question become: how much is uncertainty reduced after learning an
+outcome? So the question is turned into how to measure uncertainty. In
+developing this measure, there are three assumptions:
+
+1.  Uncertainty should be continuous
+2.  Uncertainty increases when the number of possible events increases
+3.  Uncertainty is additive
+
+We use **information entropy** to measure uncertainty:
+
+![H(p) = -E(\log{p_i}) = -\sum\_{i = 1}^{n}p_i \log{p_i}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H%28p%29%20%3D%20-E%28%5Clog%7Bp_i%7D%29%20%3D%20-%5Csum_%7Bi%20%3D%201%7D%5E%7Bn%7Dp_i%20%5Clog%7Bp_i%7D "H(p) = -E(\log{p_i}) = -\sum_{i = 1}^{n}p_i \log{p_i}")
+
+In plain words: **The uncertainty contained in a probability
+distribution is the average log-probability of an event**
+
+``` r
+# when there are 2 events
+prob <- c(0.3, 0.7)
+-sum(prob * log(prob))
+```
+
+    ## [1] 0.6108643
+
+``` r
+# when there are 3 events
+prob <- c(0.1, 0.3, 0.6)
+-sum(prob * log(prob))
+```
+
+    ## [1] 0.8979457
+
+The uncertainty is higher when there are more events in a distribution
+
+Going back to the problem of measuring the distance between our
+prediction and the target. The question is now: what is the additional
+uncertainty induced by using probability from one distribution to
+describe another. This is called **KL-divergence**:
+
+![\begin{aligned}
+D\_{KL}(p,q) &= H(p,q) - H(q) \\\\
+&= (-\sum_i p_i \log(q_i)) -(-\sum_i p_i \log(p_i)) \\\\
+&= \sum_i p_i (\log{p_i} - \log{q_i}) \\\\
+\end{aligned}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cbegin%7Baligned%7D%0AD_%7BKL%7D%28p%2Cq%29%20%26%3D%20H%28p%2Cq%29%20-%20H%28q%29%20%5C%5C%0A%26%3D%20%28-%5Csum_i%20p_i%20%5Clog%28q_i%29%29%20-%28-%5Csum_i%20p_i%20%5Clog%28p_i%29%29%20%5C%5C%0A%26%3D%20%5Csum_i%20p_i%20%28%5Clog%7Bp_i%7D%20-%20%5Clog%7Bq_i%7D%29%20%5C%5C%0A%5Cend%7Baligned%7D "\begin{aligned}
+D_{KL}(p,q) &= H(p,q) - H(q) \\
+&= (-\sum_i p_i \log(q_i)) -(-\sum_i p_i \log(p_i)) \\
+&= \sum_i p_i (\log{p_i} - \log{q_i}) \\
+\end{aligned}")
+
+``` r
+# real probabilities
+prob <- c(0.3, 0.7)
+# prediction
+num <- 100
+a <- seq(0, 1, length.out = num); a[1] <- .01; a[num] <- .99
+b <- 1 - a
+# calculate the KL divergence of each pair of prediction from the true value
+kl <- sapply(1:num, 
+             function(i) (-(prob[1]*log(a[i]) + prob[2]*log(b[i]))) - (-sum(prob*log(prob)))
+             )
+plot(a, kl, type = "l", col = "darkblue", lwd = 2,
+     xlab = "q1", ylab = "KL divergence of q from p")
+abline(v = prob[1], lty = 2)
+```
+
+![](lecture7_overfitting_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+The divergence increases when the values of q gets far away from the
+true value p. When they are the same, the divergence is zero.
+
+### Applying entropy to evaluate predictive accuracy in statistical modelling
+
+We can calculate the divergence when we know the true model, but in
+statistical modeling, we will never know the true model. However, it
+still helps to compare different models and see which one is the best.
+We use the concept of information entropy to calculate the
+**log-pointwise-predictive-density**:
+
+![lppd(y,\Theta) = \sum_i \log p(y_i) = \sum_i \log \frac{1}{S} \sum_S p(y_i\|\Theta_S)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;lppd%28y%2C%5CTheta%29%20%3D%20%5Csum_i%20%5Clog%20p%28y_i%29%20%3D%20%5Csum_i%20%5Clog%20%5Cfrac%7B1%7D%7BS%7D%20%5Csum_S%20p%28y_i%7C%5CTheta_S%29 "lppd(y,\Theta) = \sum_i \log p(y_i) = \sum_i \log \frac{1}{S} \sum_S p(y_i|\Theta_S)")
+
+where
+![S](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;S "S")
+is the number of parameter samples and
+![\Theta_S](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5CTheta_S "\Theta_S")
+is the
+![s](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;s "s")th
+set of sample of parameter. We calculate the expected uncertainty
+without normalizing by dividing with the number of observations
+(![\sum_i \log p(y_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Csum_i%20%5Clog%20p%28y_i%29 "\sum_i \log p(y_i)")).
+In the Bayesian context, the probability of each observation given the
+psterior distribution is calculated over the posterior distribution.
+
 ## Use log-pointwise predictive density to estimate model fit
 
 ``` r
@@ -173,14 +298,14 @@ lppd <- sapply(1:n, f)
 lppd(m7.1, n = 1e4)
 ```
 
-    ## [1]  0.6117106  0.6488577  0.5448288  0.6278264  0.4639230  0.4263437 -0.8523117
+    ## [1]  0.6116813  0.6488241  0.5447986  0.6277991  0.4639025  0.4263197 -0.8522590
 
 ``` r
 # calculate the total score for each model
 sapply(list(m7.1, m7.2, m7.3, m7.4), function(x) sum(lppd(x)))
 ```
 
-    ## [1]  2.487379  2.572391 14.123991 39.519193
+    ## [1]  2.487268  2.572391 14.123991 39.519193
 
 We can see models with more polynomials have higher scores. Models with
 additional predictors always improve deviance on training data, but
@@ -197,7 +322,11 @@ use alternative strategies to approximate it.
 
 Actual cross-validation is sometimes computational expensive, especially
 for leave-one-out cross-validation. We try to approximate instead:
-Pareto-smoothed importance sampling cross-validation (PSIS).
+Pareto-smoothed importance sampling cross-validation (PSIS). (Importance
+sampling is to use the reversed probability of the ommitted case to
+weight the probability of this case so that we can an approximation of
+the probability of this case in the leave-one-out posterior
+distribution.)
 
 ``` r
 # the estimation is safe when k < 0.7
@@ -208,7 +337,7 @@ PSIS(m7.1)
     ## Some Pareto k values are very high (>1). Set pointwise=TRUE to inspect individual points.
 
     ##       PSIS      lppd  penalty  std_err
-    ## 1 15.00916 -7.504581 10.00839 15.85592
+    ## 1 15.00957 -7.504785 10.00849 15.85571
 
 ### Information criteria
 
@@ -236,8 +365,8 @@ fact)
 WAIC(m7.1)
 ```
 
-    ##       WAIC     lppd  penalty  std_err
-    ## 1 4.898302 2.477596 4.926747 8.729284
+    ##       WAIC     lppd  penalty std_err
+    ## 1 4.898273 2.477485 4.926622  8.7289
 
 How to calculate WAIC
 
@@ -331,7 +460,7 @@ Visually showing the predictive accuracy:
 plot(compare(m6.6, m6.7, m6.8, func = WAIC))
 ```
 
-![](lecture7_overfitting_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](lecture7_overfitting_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 The solid points are in-sample deviance values and the hollow points are
 out-of-sample deviance. The triangles are contrasts. We can see m6.8 and
@@ -414,7 +543,7 @@ plot(PSIS_m5.3$k, WAIC_m5.3$penalty,
 abline(v = 0.5, lty = 2)
 ```
 
-![](lecture7_overfitting_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](lecture7_overfitting_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 Points with high Pareto k also has high penalty from WAIC. The function
 to calculate PSIS warns us against them, but the function for WAIC
@@ -451,4 +580,4 @@ m5.3t_psis <- PSIS(m5.3t, pointwise = TRUE)
 plot(m5.3t_psis$k)
 ```
 
-![](lecture7_overfitting_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](lecture7_overfitting_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->

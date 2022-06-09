@@ -151,6 +151,93 @@ overfitting_is_bad(m7.4)
 
 A problem with R^2^ in the context of Bayesian statistics is that it only deals with the predictions of the means. This is bad because this throws away information in the posterior distribution.
 
+## The concept of information criteria
+
+### Measuring accuracy
+
+The first thing we need to know is how to measure the predictive accuracy of some prediction methods. The logical way is to choose a measurement that is maximized when we know the true data generating model. This is the joint likelihood of a prediction being correct for a sequence of data. Let's try a simulation.
+
+```{r}
+# there is a 30% likelihood of raining 
+set.seed(1999)
+days <- 100
+# get a sequence of weather
+weather <- c(rep(1, days*0.3), rep(0, days*0.7))
+# the joint likelihood of being right when using different predictions
+pred_rain <- seq(0, 1, length.out = days)
+joint_l <- pred_rain^(sum(weather)) * (1 - pred_rain)^(days - sum(weather))
+# we can see the joint likelihood is maximized when the prediction is the same as the true model
+plot(pred_rain, joint_l, type = "l",
+     xlab = "prediction", ylab = "joint likelihood")
+abline(v = 0.3, col = 2)
+```
+
+In statistics literature, people usually report the logarithm of the joint probability. This is called **log scoring rule**.
+
+
+### The distance from the target and uncertainty
+
+The next thing we need to do is to know how far is our prediction from our target - the true model. From the perspective of information theory, this question become: how much is uncertainty reduced after learning an outcome? So the question is turned into how to measure uncertainty. In developing this measure, there are three assumptions: 
+
+1. Uncertainty should be continuous
+2. Uncertainty increases when the number of possible events increases
+3. Uncertainty is additive
+
+We use **information entropy** to measure uncertainty:
+
+$$H(p) = -E(\log{p_i}) = -\sum_{i = 1}^{n}p_i \log{p_i}$$
+
+In plain words: **The uncertainty contained in a probability distribution is the average log-probability of an event**
+
+```{r}
+# when there are 2 events
+prob <- c(0.3, 0.7)
+-sum(prob * log(prob))
+
+# when there are 3 events
+prob <- c(0.1, 0.3, 0.6)
+-sum(prob * log(prob))
+```
+
+The uncertainty is higher when there are more events in a distribution
+
+Going back to the problem of measuring the distance between our prediction and the target. The question is now: what is the additional uncertainty induced by using probability from one distribution to describe another. This is called **KL-divergence**:
+
+$$
+\begin{aligned}
+D_{KL}(p,q) &= H(p,q) - H(q) \\
+&= (-\sum_i p_i \log(q_i)) -(-\sum_i p_i \log(p_i)) \\
+&= \sum_i p_i (\log{p_i} - \log{q_i}) \\
+\end{aligned}
+$$
+
+```{r}
+# real probabilities
+prob <- c(0.3, 0.7)
+# prediction
+num <- 100
+a <- seq(0, 1, length.out = num); a[1] <- .01; a[num] <- .99
+b <- 1 - a
+# calculate the KL divergence of each pair of prediction from the true value
+kl <- sapply(1:num, 
+             function(i) (-(prob[1]*log(a[i]) + prob[2]*log(b[i]))) - (-sum(prob*log(prob)))
+             )
+plot(a, kl, type = "l", col = "darkblue", lwd = 2,
+     xlab = "q1", ylab = "KL divergence of q from p")
+abline(v = prob[1], lty = 2)
+```
+
+The divergence increases when the values of q gets far away from the true value p. When they are the same, the divergence is zero.
+
+
+### Applying entropy to evaluate predictive accuracy in statistical modelling
+
+We can calculate the divergence when we know the true model, but in statistical modeling, we will never know the true model. However, it still helps to compare different models and see which one is the best. We use the concept of information entropy to calculate the **log-pointwise-predictive-density**:
+
+$$lppd(y,\Theta) = \sum_i \log p(y_i) = \sum_i \log \frac{1}{S} \sum_S p(y_i|\Theta_S)$$
+
+where $S$ is the number of parameter samples and $\Theta_S$ is the $s$th set of sample of parameter. We calculate the expected uncertainty without normalizing by dividing with the number of observations ($\sum_i \log p(y_i)$). In the Bayesian context, the probability of each observation given the psterior distribution is calculated over the posterior distribution.
+
 
 ## Use log-pointwise predictive density to estimate model fit
 
@@ -178,7 +265,7 @@ We can't, by definition, get an out-of-sample score of deviance, so we use alter
 
 ### Cross-validation
 
-Actual cross-validation is sometimes computational expensive, especially for leave-one-out cross-validation. We try to approximate instead: Pareto-smoothed importance sampling cross-validation (PSIS).
+Actual cross-validation is sometimes computational expensive, especially for leave-one-out cross-validation. We try to approximate instead: Pareto-smoothed importance sampling cross-validation (PSIS). (Importance sampling is to use the reversed probability of the ommitted case to weight the probability of this case so that we can an approximation of the probability of this case in the leave-one-out posterior distribution.)
 
 ```{r}
 # the estimation is safe when k < 0.7
