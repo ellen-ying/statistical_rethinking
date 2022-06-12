@@ -207,8 +207,8 @@ library(shape)
 Q <- list()
 Q$q <- c(-0.1, 0.2) # current position
 pr <- 0.3
-step <- 0.03 # epsilon
-L <- 11 # step size
+step <- 0.03 # epsilon - step size
+L <- 11 # step number
 path_col <- col.alpha("black", 0.5)
 n_samples <- 4
 
