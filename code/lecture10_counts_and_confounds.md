@@ -88,44 +88,44 @@ m1 <- ulam(
     ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
+    ## Chain 3 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 4 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 1 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 1 Iteration: 501 / 1000 [ 50%]  (Sampling) 
-    ## Chain 3 Iteration: 400 / 1000 [ 40%]  (Warmup) 
+    ## Chain 3 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 2 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 2 Iteration: 501 / 1000 [ 50%]  (Sampling) 
-    ## Chain 3 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 3 Iteration: 501 / 1000 [ 50%]  (Sampling) 
+    ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 4 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 4 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
-    ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
-    ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
-    ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
-    ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+    ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+    ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+    ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+    ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
-    ## Chain 1 finished in 1.4 seconds.
-    ## Chain 3 finished in 1.4 seconds.
-    ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
+    ## Chain 1 finished in 1.2 seconds.
+    ## Chain 2 finished in 1.2 seconds.
+    ## Chain 3 finished in 1.1 seconds.
     ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 2 finished in 1.5 seconds.
-    ## Chain 4 finished in 1.5 seconds.
+    ## Chain 4 finished in 1.2 seconds.
     ## 
     ## All 4 chains finished successfully.
-    ## Mean chain execution time: 1.5 seconds.
-    ## Total execution time: 1.7 seconds.
+    ## Mean chain execution time: 1.2 seconds.
+    ## Total execution time: 1.4 seconds.
 
 ``` r
 # direct effect - now confounded
@@ -148,17 +148,17 @@ m2 <- ulam(
     ## Chain 2 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 3 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 4 Iteration: 100 / 1000 [ 10%]  (Warmup) 
-    ## Chain 3 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 1 Iteration: 200 / 1000 [ 20%]  (Warmup) 
-    ## Chain 2 Iteration: 200 / 1000 [ 20%]  (Warmup) 
+    ## Chain 3 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 4 Iteration: 200 / 1000 [ 20%]  (Warmup) 
-    ## Chain 3 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 300 / 1000 [ 30%]  (Warmup) 
-    ## Chain 2 Iteration: 300 / 1000 [ 30%]  (Warmup) 
+    ## Chain 2 Iteration: 200 / 1000 [ 20%]  (Warmup) 
+    ## Chain 3 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 400 / 1000 [ 40%]  (Warmup) 
-    ## Chain 3 Iteration: 400 / 1000 [ 40%]  (Warmup) 
+    ## Chain 2 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
+    ## Chain 3 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 4 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 1 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 1 Iteration: 501 / 1000 [ 50%]  (Sampling) 
@@ -169,33 +169,33 @@ m2 <- ulam(
     ## Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 2 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 2 Iteration: 501 / 1000 [ 50%]  (Sampling) 
-    ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+    ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
-    ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+    ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
-    ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+    ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
-    ## Chain 1 finished in 1.7 seconds.
+    ## Chain 1 finished in 1.5 seconds.
     ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 2 finished in 1.7 seconds.
-    ## Chain 3 finished in 1.7 seconds.
-    ## Chain 4 finished in 1.7 seconds.
+    ## Chain 2 finished in 1.6 seconds.
+    ## Chain 3 finished in 1.5 seconds.
+    ## Chain 4 finished in 1.5 seconds.
     ## 
     ## All 4 chains finished successfully.
-    ## Mean chain execution time: 1.7 seconds.
-    ## Total execution time: 1.8 seconds.
+    ## Mean chain execution time: 1.5 seconds.
+    ## Total execution time: 1.6 seconds.
 
 To see how the confounder affects the results, let’s do some posterior
 contrasts
@@ -246,16 +246,16 @@ m3 <- ulam(
     ## Chain 4 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 1 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 2 Iteration: 200 / 1000 [ 20%]  (Warmup) 
-    ## Chain 3 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 4 Iteration: 200 / 1000 [ 20%]  (Warmup) 
+    ## Chain 3 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 1 Iteration: 300 / 1000 [ 30%]  (Warmup) 
+    ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 2 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 3 Iteration: 300 / 1000 [ 30%]  (Warmup) 
-    ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 400 / 1000 [ 40%]  (Warmup) 
+    ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 3 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 4 Iteration: 400 / 1000 [ 40%]  (Warmup) 
-    ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 1 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 1 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 2 Iteration: 500 / 1000 [ 50%]  (Warmup) 
@@ -269,29 +269,29 @@ m3 <- ulam(
     ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
-    ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
-    ## Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+    ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+    ## Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+    ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
-    ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
-    ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+    ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 1 finished in 2.8 seconds.
-    ## Chain 3 finished in 2.9 seconds.
+    ## Chain 1 finished in 2.7 seconds.
     ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
+    ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 2 finished in 3.0 seconds.
-    ## Chain 4 finished in 2.9 seconds.
+    ## Chain 2 finished in 2.8 seconds.
+    ## Chain 3 finished in 2.8 seconds.
+    ## Chain 4 finished in 2.8 seconds.
     ## 
     ## All 4 chains finished successfully.
-    ## Mean chain execution time: 2.9 seconds.
-    ## Total execution time: 3.1 seconds.
+    ## Mean chain execution time: 2.8 seconds.
+    ## Total execution time: 2.9 seconds.
 
 ``` r
 # posterior mean, against the results from m2
@@ -333,11 +333,13 @@ and examine the consequences of different strengths/types. In the
 example above, we model this:
 
 ![A_i \sim \mathrm{Bernoulli}(p_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;A_i%20%5Csim%20%5Cmathrm%7BBernoulli%7D%28p_i%29 "A_i \sim \mathrm{Bernoulli}(p_i)")
+
 ![\mathrm{logit}(p_i) = \alpha\[G_i,D_i\] + \beta\_{G\[i\]} u_i](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cmathrm%7Blogit%7D%28p_i%29%20%3D%20%5Calpha%5BG_i%2CD_i%5D%20%2B%20%5Cbeta_%7BG%5Bi%5D%7D%20u_i "\mathrm{logit}(p_i) = \alpha[G_i,D_i] + \beta_{G[i]} u_i")
 
 Simultaneously, we also need to model the effect of u on D
 
 ![(D_i = 2) \sim \mathrm{Bernoulli}(q_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%28D_i%20%3D%202%29%20%5Csim%20%5Cmathrm%7BBernoulli%7D%28q_i%29 "(D_i = 2) \sim \mathrm{Bernoulli}(q_i)")
+
 ![\mathrm{logit}(q_i) = \delta\[G_i\] + \gamma\_{G\[i\]} u_i](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cmathrm%7Blogit%7D%28q_i%29%20%3D%20%5Cdelta%5BG_i%5D%20%2B%20%5Cgamma_%7BG%5Bi%5D%7D%20u_i "\mathrm{logit}(q_i) = \delta[G_i] + \gamma_{G[i]} u_i")
 
 ``` r
@@ -405,8 +407,8 @@ mGDu <- ulam(
     ## Chain 3 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 2 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 300 / 1000 [ 30%]  (Warmup) 
-    ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 3 Iteration: 300 / 1000 [ 30%]  (Warmup) 
+    ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 3 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 1 Iteration: 400 / 1000 [ 40%]  (Warmup) 
@@ -415,38 +417,38 @@ mGDu <- ulam(
     ## Chain 2 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 3 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 3 Iteration: 501 / 1000 [ 50%]  (Sampling) 
-    ## Chain 4 Iteration: 500 / 1000 [ 50%]  (Warmup) 
-    ## Chain 4 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 1 Iteration: 500 / 1000 [ 50%]  (Warmup) 
+    ## Chain 4 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 1 Iteration: 501 / 1000 [ 50%]  (Sampling) 
+    ## Chain 4 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
-    ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+    ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
-    ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+    ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
-    ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+    ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
-    ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+    ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 2 finished in 72.1 seconds.
+    ## Chain 2 finished in 108.2 seconds.
     ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 3 finished in 74.0 seconds.
-    ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 4 finished in 75.2 seconds.
+    ## Chain 3 finished in 110.1 seconds.
     ## Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 1 finished in 75.4 seconds.
+    ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
+    ## Chain 1 finished in 111.9 seconds.
+    ## Chain 4 finished in 111.8 seconds.
     ## 
     ## All 4 chains finished successfully.
-    ## Mean chain execution time: 74.2 seconds.
-    ## Total execution time: 75.6 seconds.
+    ## Mean chain execution time: 110.5 seconds.
+    ## Total execution time: 112.0 seconds.
 
 Let’s choose department A and plot the posterior mean of F-M contrast.
 
@@ -492,11 +494,13 @@ drawdag(dag2)
 We can model test scores together with other predictors:
 
 ![A_i \sim \mathrm{Bernoulli}(p_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;A_i%20%5Csim%20%5Cmathrm%7BBernoulli%7D%28p_i%29 "A_i \sim \mathrm{Bernoulli}(p_i)")
+
 ![\mathrm{logit}(p_i) = \alpha\[G_i,D_i\] + \beta\_{G\[i\]} u_i](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cmathrm%7Blogit%7D%28p_i%29%20%3D%20%5Calpha%5BG_i%2CD_i%5D%20%2B%20%5Cbeta_%7BG%5Bi%5D%7D%20u_i "\mathrm{logit}(p_i) = \alpha[G_i,D_i] + \beta_{G[i]} u_i")
 
 Simultaneously, we also need to model u and T:
 
 ![u_k \sim \mathrm{Normal}(0, 1)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;u_k%20%5Csim%20%5Cmathrm%7BNormal%7D%280%2C%201%29 "u_k \sim \mathrm{Normal}(0, 1)")
+
 ![T\_{i,j} \sim \mathrm{Normal}(u_i, \tau_j)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;T_%7Bi%2Cj%7D%20%5Csim%20%5Cmathrm%7BNormal%7D%28u_i%2C%20%5Ctau_j%29 "T_{i,j} \sim \mathrm{Normal}(u_i, \tau_j)")
 
 ``` r
@@ -530,16 +534,16 @@ m4 <- ulam(
     ## Chain 3 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 4 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 1 Iteration: 100 / 1000 [ 10%]  (Warmup) 
-    ## Chain 2 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 4 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 1 Iteration: 200 / 1000 [ 20%]  (Warmup) 
+    ## Chain 2 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 3 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 1 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 4 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 3 Iteration: 200 / 1000 [ 20%]  (Warmup) 
-    ## Chain 1 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 2 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
+    ## Chain 1 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 3 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 1 Iteration: 501 / 1000 [ 50%]  (Sampling) 
@@ -552,35 +556,35 @@ m4 <- ulam(
     ## Chain 4 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 4 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
-    ## Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+    ## Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 2 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 2 Iteration: 501 / 1000 [ 50%]  (Sampling) 
-    ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+    ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
-    ## Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+    ## Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
-    ## Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 1 finished in 5.0 seconds.
-    ## Chain 3 finished in 5.0 seconds.
+    ## Chain 3 finished in 5.8 seconds.
+    ## Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
+    ## Chain 1 finished in 5.9 seconds.
     ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 4 finished in 5.4 seconds.
+    ## Chain 4 finished in 6.2 seconds.
     ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 2 finished in 5.8 seconds.
+    ## Chain 2 finished in 6.6 seconds.
     ## 
     ## All 4 chains finished successfully.
-    ## Mean chain execution time: 5.3 seconds.
-    ## Total execution time: 5.9 seconds.
+    ## Mean chain execution time: 6.1 seconds.
+    ## Total execution time: 6.7 seconds.
 
 ``` r
 # posterior mean, against the results from m2
@@ -647,6 +651,7 @@ d$contact_id <- ifelse(d$contact == "high", 2, 1)
 In math form, our model looks like this:
 
 ![T_i = \mathrm{Poisson}(\lambda_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;T_i%20%3D%20%5Cmathrm%7BPoisson%7D%28%5Clambda_i%29 "T_i = \mathrm{Poisson}(\lambda_i)")
+
 ![\log \lambda_i = \alpha\_{CID\[i\]} + \beta\_{CID\[i\]} \log P_i](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Clog%20%5Clambda_i%20%3D%20%5Calpha_%7BCID%5Bi%5D%7D%20%2B%20%5Cbeta_%7BCID%5Bi%5D%7D%20%5Clog%20P_i "\log \lambda_i = \alpha_{CID[i]} + \beta_{CID[i]} \log P_i")
 
 We need to choose priors for alpha and beta.
@@ -842,16 +847,16 @@ m11.10 <- ulam(
     ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
-    ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
-    ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 1 finished in 0.1 seconds.
     ## Chain 2 finished in 0.1 seconds.
     ## Chain 3 finished in 0.1 seconds.
+    ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+    ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 4 finished in 0.1 seconds.
     ## 
     ## All 4 chains finished successfully.
     ## Mean chain execution time: 0.1 seconds.
-    ## Total execution time: 0.2 seconds.
+    ## Total execution time: 0.3 seconds.
 
 ``` r
 compare(m11.9, m11.10, func = PSIS)
@@ -927,6 +932,7 @@ The model we will fit to the data becomes (note that the link function
 is gone):
 
 ![T_i = \mathrm{Poisson}(\lambda_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;T_i%20%3D%20%5Cmathrm%7BPoisson%7D%28%5Clambda_i%29 "T_i = \mathrm{Poisson}(\lambda_i)")
+
 ![\lambda_i = \alpha P_i^{\beta} / \gamma](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Clambda_i%20%3D%20%5Calpha%20P_i%5E%7B%5Cbeta%7D%20%2F%20%5Cgamma "\lambda_i = \alpha P_i^{\beta} / \gamma")
 
 ``` r
@@ -962,51 +968,51 @@ m11.11 <- ulam(
     ## Chain 4 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 4 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 4 Iteration: 200 / 1000 [ 20%]  (Warmup) 
-    ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 200 / 1000 [ 20%]  (Warmup) 
-    ## Chain 1 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 2 Iteration: 300 / 1000 [ 30%]  (Warmup) 
-    ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 3 Iteration: 300 / 1000 [ 30%]  (Warmup) 
-    ## Chain 3 Iteration: 400 / 1000 [ 40%]  (Warmup) 
+    ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
+    ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 4 Iteration: 400 / 1000 [ 40%]  (Warmup) 
+    ## Chain 1 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 2 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 2 Iteration: 501 / 1000 [ 50%]  (Sampling) 
+    ## Chain 3 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 3 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 3 Iteration: 501 / 1000 [ 50%]  (Sampling) 
-    ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 4 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 4 Iteration: 501 / 1000 [ 50%]  (Sampling) 
-    ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 1 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 1 Iteration: 501 / 1000 [ 50%]  (Sampling) 
+    ## Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+    ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+    ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
-    ## Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+    ## Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+    ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
-    ## Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 1 finished in 0.7 seconds.
-    ## Chain 2 finished in 0.7 seconds.
-    ## Chain 3 finished in 0.7 seconds.
-    ## Chain 4 finished in 0.6 seconds.
+    ## Chain 1 finished in 0.8 seconds.
+    ## Chain 2 finished in 0.8 seconds.
+    ## Chain 3 finished in 0.8 seconds.
+    ## Chain 4 finished in 0.7 seconds.
     ## 
     ## All 4 chains finished successfully.
-    ## Mean chain execution time: 0.7 seconds.
-    ## Total execution time: 0.8 seconds.
+    ## Mean chain execution time: 0.8 seconds.
+    ## Total execution time: 0.9 seconds.
 
 ``` r
 # posterior prediction
@@ -1053,6 +1059,7 @@ over a unit time or distance,
 Therefore we can model varying exposure using the following model:
 
 ![y_i \sim \mathrm{Poisson}(\mu_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;y_i%20%5Csim%20%5Cmathrm%7BPoisson%7D%28%5Cmu_i%29 "y_i \sim \mathrm{Poisson}(\mu_i)")
+
 ![\log \mu_i = \log \tau_i + \alpha + \beta x_i](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Clog%20%5Cmu_i%20%3D%20%5Clog%20%5Ctau_i%20%2B%20%5Calpha%20%2B%20%5Cbeta%20x_i "\log \mu_i = \log \tau_i + \alpha + \beta x_i")
 
 We will use a simulated data to illustrate this
@@ -1205,7 +1212,7 @@ m11.13 <- stan(model_code = code_m11.13, data = dat_list, chains = 4)
     ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 3 finished in 0.1 seconds.
+    ## Chain 3 finished in 0.2 seconds.
     ## Chain 4 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 4 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 4 Iteration: 200 / 1000 [ 20%]  (Warmup) 
@@ -1218,11 +1225,11 @@ m11.13 <- stan(model_code = code_m11.13, data = dat_list, chains = 4)
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 4 finished in 0.1 seconds.
+    ## Chain 4 finished in 0.3 seconds.
     ## 
     ## All 4 chains finished successfully.
-    ## Mean chain execution time: 0.1 seconds.
-    ## Total execution time: 0.8 seconds.
+    ## Mean chain execution time: 0.2 seconds.
+    ## Total execution time: 1.3 seconds.
 
 ``` r
 precis(m11.13, 2)
@@ -1334,7 +1341,7 @@ m11.14 <- stan(model_code = code_m11.14, data = dat_list, chains = 4)
     ## Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 1 finished in 3.5 seconds.
+    ## Chain 1 finished in 7.3 seconds.
     ## Chain 2 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 2 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 2 Iteration: 200 / 1000 [ 20%]  (Warmup) 
@@ -1347,7 +1354,7 @@ m11.14 <- stan(model_code = code_m11.14, data = dat_list, chains = 4)
     ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 2 finished in 3.3 seconds.
+    ## Chain 2 finished in 4.5 seconds.
     ## Chain 3 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 3 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 3 Iteration: 200 / 1000 [ 20%]  (Warmup) 
@@ -1360,7 +1367,7 @@ m11.14 <- stan(model_code = code_m11.14, data = dat_list, chains = 4)
     ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 3 finished in 3.1 seconds.
+    ## Chain 3 finished in 6.0 seconds.
     ## Chain 4 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 4 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 4 Iteration: 200 / 1000 [ 20%]  (Warmup) 
@@ -1373,11 +1380,11 @@ m11.14 <- stan(model_code = code_m11.14, data = dat_list, chains = 4)
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 4 finished in 3.2 seconds.
+    ## Chain 4 finished in 5.4 seconds.
     ## 
     ## All 4 chains finished successfully.
-    ## Mean chain execution time: 3.3 seconds.
-    ## Total execution time: 13.5 seconds.
+    ## Mean chain execution time: 5.8 seconds.
+    ## Total execution time: 23.6 seconds.
 
 ``` r
 precis(m11.14, 2)

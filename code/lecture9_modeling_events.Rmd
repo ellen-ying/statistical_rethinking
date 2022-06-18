@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(rethinking)
 library(dagitty)
 ```
@@ -95,6 +95,7 @@ Generalized linear models use different likelihood functions that are not constr
 - Binomial GLM:
 
 $y_i \sim {\sf Binomial} (n, p_i)$
+
 ${\sf logit}(p_i) = \alpha + \beta x_i$
 
 where the logit function is defined as log-odds (the log ratio of an event happening to an event not happening)
@@ -106,6 +107,7 @@ This function maps the interval from 0 to 1 onto a linear model defined over all
 - Log link function:
 
 $y_i \sim {\sf Normal} (\mu, \sigma_i)$
+
 $\log(\sigma_i) = \alpha + \beta x_i$
 
 This function maps a parameter only defined over positive real numbers onto a linear model.
@@ -131,6 +133,7 @@ d$treatment <- 1 + d$prosoc_left + 2*d$condition
 We will use the following model to fit the data:
 
 $L_i \sim {\sf Binomial}(1, p_i)$
+
 ${\sf logit}(p_i) = \alpha_{ACTOR[i]} + \beta_{TREATMENT[i]}$
 
 Before we fit the model, let's choose priors for them. In binomial regression, flat priors behave weirdly.
@@ -188,6 +191,7 @@ for (omega in c(10, 0.5)) {
 When the prior of $beta$ is flat, the prior distribution of contrast between treatment group 1 and 2 is either 0 or 1, which doesn't make sense. The prior we choose instead is skeptical of large differences between treatment groups. However, if the data does turn out to shown big differences, they will still be capture by this prior.
 
 Officially fit the model.
+
 ```{r}
 # get a cleaned dataset
 dat_list <- list(
@@ -374,7 +378,9 @@ The acceptance rate for gender 1 is `r paste0(round(result_b[1, 2]/(result_b[1, 
 We will use the following model:
 
 $A_i \sim {\sf Binomial}(N_i, p_i)$
+
 ${\sf logit}(p_i) = \alpha_{GID[i]}$
+
 $\alpha_j \sim {\sf Normal}(0, 1.5)$
 
 ```{r}

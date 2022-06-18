@@ -142,11 +142,13 @@ What's the implication of what we don't know? How strong must the confound be to
 Practically, we assume confounders exist, and we add them to the model and examine the consequences of different strengths/types. In the example above, we model this:
 
 $A_i \sim \mathrm{Bernoulli}(p_i)$
+
 $\mathrm{logit}(p_i) = \alpha[G_i,D_i] + \beta_{G[i]} u_i$
 
 Simultaneously, we also need to model the effect of u on D
 
 $(D_i = 2) \sim \mathrm{Bernoulli}(q_i)$
+
 $\mathrm{logit}(q_i) = \delta[G_i] + \gamma_{G[i]} u_i$
 
 ```{r}
@@ -252,11 +254,13 @@ drawdag(dag2)
 We can model test scores together with other predictors:
 
 $A_i \sim \mathrm{Bernoulli}(p_i)$
+
 $\mathrm{logit}(p_i) = \alpha[G_i,D_i] + \beta_{G[i]} u_i$
 
 Simultaneously, we also need to model u and T:
 
 $u_k \sim \mathrm{Normal}(0, 1)$
+
 $T_{i,j} \sim \mathrm{Normal}(u_i, \tau_j)$
 
 ```{r}
@@ -327,6 +331,7 @@ d$contact_id <- ifelse(d$contact == "high", 2, 1)
 In math form, our model looks like this:
 
 $T_i = \mathrm{Poisson}(\lambda_i)$
+
 $\log \lambda_i = \alpha_{CID[i]} + \beta_{CID[i]} \log P_i$
 
 We need to choose priors for alpha and beta.
@@ -467,6 +472,7 @@ $\hat{T} = \frac{\alpha P^{\beta}}{\gamma}$
 The model we will fit to the data becomes (note that the link function is gone):
 
 $T_i = \mathrm{Poisson}(\lambda_i)$
+
 $\lambda_i = \alpha P_i^{\beta} / \gamma$
 
 ```{r}
@@ -524,6 +530,7 @@ $\log \lambda_i = \log {\frac{\mu_i}{\tau_i}} = \alpha + \beta x_i$
 Therefore we can model varying exposure using the following model:
 
 $y_i \sim \mathrm{Poisson}(\mu_i)$
+
 $\log \mu_i = \log \tau_i + \alpha + \beta x_i$
 
 We will use a simulated data to illustrate this

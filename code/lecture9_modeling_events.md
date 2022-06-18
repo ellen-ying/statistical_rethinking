@@ -106,7 +106,7 @@ distribution[which.max(entropies)]
 ```
 
     ## [[1]]
-    ## [1] 0.09015077 0.20978640 0.20991206 0.49015077
+    ## [1] 0.09016826 0.20996070 0.20970279 0.49016826
 
 The distribution given by binomial distribution is 0, 0.21, 0.21, 0.49,
 which is almost the same as the empirical distribution that maximizes
@@ -122,6 +122,7 @@ all real numbers.
 -   Binomial GLM:
 
 ![y_i \sim {\sf Binomial} (n, p_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;y_i%20%5Csim%20%7B%5Csf%20Binomial%7D%20%28n%2C%20p_i%29 "y_i \sim {\sf Binomial} (n, p_i)")
+
 ![{\sf logit}(p_i) = \alpha + \beta x_i](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%7B%5Csf%20logit%7D%28p_i%29%20%3D%20%5Calpha%20%2B%20%5Cbeta%20x_i "{\sf logit}(p_i) = \alpha + \beta x_i")
 
 where the logit function is defined as log-odds (the log ratio of an
@@ -135,6 +136,7 @@ over all real numbers.
 -   Log link function:
 
 ![y_i \sim {\sf Normal} (\mu, \sigma_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;y_i%20%5Csim%20%7B%5Csf%20Normal%7D%20%28%5Cmu%2C%20%5Csigma_i%29 "y_i \sim {\sf Normal} (\mu, \sigma_i)")
+
 ![\log(\sigma_i) = \alpha + \beta x_i](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Clog%28%5Csigma_i%29%20%3D%20%5Calpha%20%2B%20%5Cbeta%20x_i "\log(\sigma_i) = \alpha + \beta x_i")
 
 This function maps a parameter only defined over positive real numbers
@@ -169,6 +171,7 @@ d$treatment <- 1 + d$prosoc_left + 2*d$condition
 We will use the following model to fit the data:
 
 ![L_i \sim {\sf Binomial}(1, p_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;L_i%20%5Csim%20%7B%5Csf%20Binomial%7D%281%2C%20p_i%29 "L_i \sim {\sf Binomial}(1, p_i)")
+
 ![{\sf logit}(p_i) = \alpha\_{ACTOR\[i\]} + \beta\_{TREATMENT\[i\]}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%7B%5Csf%20logit%7D%28p_i%29%20%3D%20%5Calpha_%7BACTOR%5Bi%5D%7D%20%2B%20%5Cbeta_%7BTREATMENT%5Bi%5D%7D "{\sf logit}(p_i) = \alpha_{ACTOR[i]} + \beta_{TREATMENT[i]}")
 
 Before we fit the model, let’s choose priors for them. In binomial
@@ -260,22 +263,6 @@ m11.4 <- ulam(
 )
 ```
 
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-348778277e9e.stan', line 2, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-348778277e9e.stan', line 3, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-348778277e9e.stan', line 4, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-
     ## Running MCMC with 4 sequential chains, with 1 thread(s) per chain...
     ## 
     ## Chain 1 Iteration:   1 / 1000 [  0%]  (Warmup) 
@@ -303,7 +290,7 @@ m11.4 <- ulam(
     ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 2 finished in 0.9 seconds.
+    ## Chain 2 finished in 1.2 seconds.
     ## Chain 3 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 3 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 3 Iteration: 200 / 1000 [ 20%]  (Warmup) 
@@ -316,7 +303,7 @@ m11.4 <- ulam(
     ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 3 finished in 1.0 seconds.
+    ## Chain 3 finished in 1.3 seconds.
     ## Chain 4 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 4 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 4 Iteration: 200 / 1000 [ 20%]  (Warmup) 
@@ -329,11 +316,11 @@ m11.4 <- ulam(
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 4 finished in 0.9 seconds.
+    ## Chain 4 finished in 1.0 seconds.
     ## 
     ## All 4 chains finished successfully.
-    ## Mean chain execution time: 1.0 seconds.
-    ## Total execution time: 4.3 seconds.
+    ## Mean chain execution time: 1.2 seconds.
+    ## Total execution time: 4.9 seconds.
 
 ``` r
 precis(m11.4, depth = 2)
@@ -544,7 +531,9 @@ pattern still occurs.
 We will use the following model:
 
 ![A_i \sim {\sf Binomial}(N_i, p_i)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;A_i%20%5Csim%20%7B%5Csf%20Binomial%7D%28N_i%2C%20p_i%29 "A_i \sim {\sf Binomial}(N_i, p_i)")
+
 ![{\sf logit}(p_i) = \alpha\_{GID\[i\]}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%7B%5Csf%20logit%7D%28p_i%29%20%3D%20%5Calpha_%7BGID%5Bi%5D%7D "{\sf logit}(p_i) = \alpha_{GID[i]}")
+
 ![\alpha_j \sim {\sf Normal}(0, 1.5)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Calpha_j%20%5Csim%20%7B%5Csf%20Normal%7D%280%2C%201.5%29 "\alpha_j \sim {\sf Normal}(0, 1.5)")
 
 ``` r
@@ -567,22 +556,6 @@ m11.7 <- ulam(
   data = dat_list, chains = 4
 )
 ```
-
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-34873f6421b0.stan', line 2, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-34873f6421b0.stan', line 3, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-34873f6421b0.stan', line 4, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
 
     ## Running MCMC with 4 sequential chains, with 1 thread(s) per chain...
     ## 
@@ -704,27 +677,6 @@ m11.8 <- ulam(
   data = dat_list, chains = 4
 )
 ```
-
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-348742076f3d.stan', line 2, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-348742076f3d.stan', line 3, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-348742076f3d.stan', line 4, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-348742076f3d.stan', line 5, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
 
     ## Running MCMC with 4 sequential chains, with 1 thread(s) per chain...
     ## 
@@ -888,22 +840,6 @@ m1 <- ulam(
 )
 ```
 
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-3487172cc142.stan', line 2, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-3487172cc142.stan', line 3, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-    ## Warning in '/var/folders/9n/6sxgpgz9295dh1nfk3mnksl00000gn/T/Rtmp2u2X1b/model-3487172cc142.stan', line 4, column 4: Declaration
-    ##     of arrays by placing brackets after a variable name is deprecated and
-    ##     will be removed in Stan 2.32.0. Instead use the array keyword before the
-    ##     type. This can be changed automatically using the auto-format flag to
-    ##     stanc
-
     ## Running MCMC with 4 parallel chains, with 1 thread(s) per chain...
     ## 
     ## Chain 1 Iteration:   1 / 1000 [  0%]  (Warmup) 
@@ -913,48 +849,48 @@ m1 <- ulam(
     ## Chain 3 Iteration:   1 / 1000 [  0%]  (Warmup) 
     ## Chain 3 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 4 Iteration:   1 / 1000 [  0%]  (Warmup) 
+    ## Chain 4 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 1 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 2 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 3 Iteration: 200 / 1000 [ 20%]  (Warmup) 
-    ## Chain 4 Iteration: 100 / 1000 [ 10%]  (Warmup) 
     ## Chain 4 Iteration: 200 / 1000 [ 20%]  (Warmup) 
     ## Chain 1 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 2 Iteration: 300 / 1000 [ 30%]  (Warmup) 
-    ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 3 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 4 Iteration: 300 / 1000 [ 30%]  (Warmup) 
     ## Chain 1 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 1 Iteration: 501 / 1000 [ 50%]  (Sampling) 
+    ## Chain 2 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 2 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 2 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 3 Iteration: 400 / 1000 [ 40%]  (Warmup) 
+    ## Chain 3 Iteration: 500 / 1000 [ 50%]  (Warmup) 
+    ## Chain 3 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 4 Iteration: 400 / 1000 [ 40%]  (Warmup) 
     ## Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
-    ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
-    ## Chain 3 Iteration: 500 / 1000 [ 50%]  (Warmup) 
-    ## Chain 3 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 4 Iteration: 500 / 1000 [ 50%]  (Warmup) 
     ## Chain 4 Iteration: 501 / 1000 [ 50%]  (Sampling) 
     ## Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+    ## Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+    ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
     ## Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
     ## Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
     ## Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+    ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 1 finished in 0.8 seconds.
     ## Chain 2 finished in 0.8 seconds.
     ## Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
-    ## Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
     ## Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
     ## Chain 3 finished in 0.8 seconds.
     ## Chain 4 finished in 0.8 seconds.
