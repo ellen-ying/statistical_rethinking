@@ -360,3 +360,337 @@ abline(v = 0.5, lty = 2)
 ```
 
 Now a lefty in fact has a lower probability winning a righty. This probability will increase when lefty advantage is stronger, or/and when the qualification for lefty is higher.
+
+
+## Problems from the book
+
+### 11H1
+
+Compare the predictive accuracy of different models of prosocial chimps.
+
+```{r, include=FALSE}
+data("chimpanzees")
+d <- chimpanzees
+# coding the four treatment conditions
+d$treatment <- 1 + d$prosoc_left + 2*d$condition
+
+dat_list <- list(
+  pulled_left = d$pulled_left,
+  actor = d$actor,
+  treatment = as.integer(d$treatment)
+)
+```
+
+```{r}
+# model with a unique intercept for each actor
+m11.4 <- ulam(
+  alist(
+    pulled_left ~ dbinom(1, p),
+    logit(p) <- a[actor] + b[treatment],
+    a[actor] ~ dnorm(0, 10),
+    b[treatment] ~ dnorm(0, 0.5)
+  ),
+  data = dat_list, chains = 4, log_lik = TRUE
+)
+
+# simpler model
+m11.1 <- ulam(
+    alist(
+      pulled_left ~ dbinom(1, p),
+      logit(p) <- a,
+      a ~ dnorm(0, 1.5)
+    ),
+    data = dat_list, chains = 4, log_lik = TRUE
+  )
+
+m11.2 <- ulam(
+    alist(
+      pulled_left ~ dbinom(1, p),
+      logit(p) <- a + b[treatment],
+      a ~ dnorm(0, 1.5),
+      b[treatment] ~ dnorm(0, 0.5)
+    ),
+    data = dat_list, chains = 4, log_lik = TRUE
+  )
+
+compare(m11.1, m11.2, m11.4, func = PSIS)
+```
+
+The model including a unique intercept for each actor does better than both the models with only an intercept or the model with an intercept and treatment as a predictor. This means that both each actor's baseline probability and the treatment are important in predicting the probability of pulling the lever.
+
+
+### 11H2
+
+Salmon pirating attempts by Bal Eagles in Washington State data.
+
+```{r}
+library(MASS);data(eagles)
+d <- eagles
+d$P <- as.integer(ifelse(d$P == "L", 1, 0))
+d$V <- as.integer(ifelse(d$V == "L", 1, 0))
+d$A <- as.integer(ifelse(d$A == "A", 1, 0))
+```
+
+(a) Fit the following model:
+
+$y_i \sim \mathrm{Binomial}(n_i, p_i)$
+
+$\mathrm{logit}(p_i) = \alpha + \beta_P P_i + \beta_V V_i + \beta_A A_i$
+
+$\alpha \sim \mathrm{Normal}(0, 1.5)$
+
+$\beta_P, \beta_V, \beta_A \sim \mathrm{Normal}(0, 0.5)$
+
+where y is the number of successful attempts, n is the total number of attempts, P is a dummy variable indicating whether or not the pirate had large body size, V is a dummy variable indicating whether or not the victim had large body size, and finally A is a dummy variable indicating whether or not the pirate was an adult. 
+
+```{r}
+# a quap model
+m11h2_quap <- quap(
+  alist(
+    y ~ dbinom(n, p),
+    logit(p) <- a + bP*P + bV*V + bA*A,
+    a ~ dnorm(0, 1.5),
+    c(bP,bV,bA) ~ dnorm(0, 0.5)
+  ), data = d
+)
+
+precis(m11h2_quap)
+```
+
+```{r}
+# a ulam model
+m11h2_ulam <- ulam(
+  alist(
+    y ~ dbinom(n, p),
+    logit(p) <- a + bP*P + bV*V + bA*A,
+    a ~ dnorm(0, 1.5),
+    c(bP,bV,bA) ~ dnorm(0, 0.5)
+  ), data = d, chains = 4, cores = 4, log_lik = TRUE
+)
+
+precis(m11h2_ulam)
+```
+
+Both models seem to give good estimations.
+
+(b) Plot the posterior predictions. Compute and display both (1) the predicted **probability** of success and its 89% interval for each row (i) in the data, as well as (2) the predicted success **count** and its 89% interval. What different information does each type of posterior prediction provide?
+
+Posterior prediction of success probability
+
+```{r}
+set.seed(2798)
+post_p <- link(m11h2_ulam, 
+               data = data.frame(n = d$n,
+                                 P = d$P,
+                                 A = d$A,
+                                 V = d$V))
+
+par(mfrow = c(1, 2))
+# pirate adult
+post_p_A1 <- post_p[, which(d$A == 1)] 
+mean_p_A1 <- apply(post_p_A1, 2, mean)
+PI_p_A1 <- apply(post_p_A1, 2, PI)
+plot(NULL,
+     xlab = "Conditions", ylab = "Predicted expectation of probability",
+     xlim = c(1,4), ylim = c(0,1), xaxt = 'n')
+for (i in 1:4) lines(c(i,i), PI_p_A1[,i], lwd = 2)
+points(1:4, mean_p_A1, pch = 16, cex = 1.5, col = "white")
+points(1:4, mean_p_A1, pch = 16, cex = 1, col = "black")
+axis(side = 1, at = 1:4, 
+     labels = c("PL/VL", "PL/VS", "PS/VL", "PS/VS"))
+mtext("Pirate is an adult")
+
+# pirate immature
+post_p_A0 <- post_p[, which(d$A == 0)] 
+mean_p_A0 <- apply(post_p_A0, 2, mean)
+PI_p_A0 <- apply(post_p_A0, 2, PI)
+plot(NULL,
+     xlab = "Conditions", ylab = "Predicted expectation of probability",
+     xlim = c(1,4), ylim = c(0,1), xaxt = 'n')
+for (i in 1:4) lines(c(i,i), PI_p_A0[,i], lwd = 2)
+points(1:4, mean_p_A0, pch = 16, cex = 1.5, col = "white")
+points(1:4, mean_p_A0, pch = 16, cex = 1, col = "black")
+axis(side = 1, at = 1:4, 
+     labels = c("PL/VL", "PL/VS", "PS/VL", "PS/VS"))
+mtext("Pirate is immature")
+```
+
+
+Posterior prediction of success count
+
+```{r}
+set.seed(2798)
+post_c <- sim(m11h2_ulam, 
+               data = data.frame(n = rep(30, nrow(d)),
+                                 P = d$P,
+                                 A = d$A,
+                                 V = d$V))
+
+par(mfrow = c(1, 2))
+# pirate adult
+post_c_A1 <- post_c[, which(d$A == 1)] 
+mean_c_A1 <- apply(post_c_A1, 2, mean)
+PI_c_A1 <- apply(post_c_A1, 2, PI)
+plot(NULL,
+     xlab = "Conditions", ylab = "Predicted expectation of count (max=30)",
+     xlim = c(1,4), ylim = c(0,30), xaxt = 'n')
+for (i in 1:4) lines(c(i,i), PI_c_A1[,i], lwd = 2)
+points(1:4, mean_c_A1, pch = 16, cex = 1.5, col = "white")
+points(1:4, mean_c_A1, pch = 16, cex = 1, col = "black")
+axis(side = 1, at = 1:4, 
+     labels = c("PL/VL", "PL/VS", "PS/VL", "PS/VS"))
+mtext("Pirate is an adult")
+
+# pirate immature
+post_c_A0 <- post_c[, which(d$A == 0)] 
+mean_c_A0 <- apply(post_c_A0, 2, mean)
+PI_c_A0 <- apply(post_c_A0, 2, PI)
+plot(NULL,
+     xlab = "Conditions", ylab = "Predicted expectation of count (max=30)",
+     xlim = c(1,4), ylim = c(0,30), xaxt = 'n')
+for (i in 1:4) lines(c(i,i), PI_c_A0[,i], lwd = 2)
+points(1:4, mean_c_A0, pch = 16, cex = 1.5, col = "white")
+points(1:4, mean_c_A0, pch = 16, cex = 1, col = "black")
+axis(side = 1, at = 1:4, 
+     labels = c("PL/VL", "PL/VS", "PS/VL", "PS/VS"))
+mtext("Pirate is immature")
+```
+
+
+The prediction of probability contains uncertainty from the intercepts and the coefficients in the model. The prediction of count also contains the uncertainty in generating the count data from the probability via a biomial distribution. The count predication contains more uncertainty.
+
+
+(c) Now try to improve the model. Consider an interaction between the pirate’s size and age (immature or adult). Compare this model to the previous one, using WAIC. Interpret.
+
+```{r}
+m11h2_ulam_n <- ulam(
+  alist(
+    y ~ binomial(n, p),
+   logit(p) <- a + bP*P + bV*V + bA*A + bPA*P*A,
+    a ~ dnorm(0, 1.5),
+    c(bP,bV,bA,bPA) ~ dnorm(0, 0.5)
+  ), data = d, chains = 4, cores = 4, log_lik = TRUE
+)
+
+compare(m11h2_ulam, m11h2_ulam_n, func = WAIC)
+```
+
+
+The new model containing an interaction term works worse than the original model.
+
+
+## 11H6
+
+Modeling the association between social learning and brain size.
+
+```{r}
+data("Primates301")
+d <- Primates301
+# a clean data
+dat <- data.frame(
+  L = d$social_learning,
+  log_b = log(d$brain)
+)
+# complete cases
+dat <- dat[complete.cases(dat$L, dat$log_b),]
+dat$B <- dat$log_b/max(dat$log_b) # standardize brain size
+```
+
+(a) Model the number of observations of `social_learning` for each species as a function of the log `brain size`. Use a Poisson distribution for the `social_learning` outcome variable. Interpret the resulting posterior. 
+
+The model we will be using
+
+$L_i \sim \mathrm{Poisson}(\lambda_i)$
+
+$\mathrm{log}(\lambda_i) = \alpha + \beta B_i$
+
+```{r}
+# choose priors
+N <- 100
+a <- rnorm(N, 0, 1)
+b <- rnorm(N, 0, 1)
+plot(NULL, xlim = c(0, 1), ylim = c(0, 10), 
+     xlab = "Log brain size (std)", ylab = "Social learning")
+for (i in 1:N) curve(exp(a[i]+b[i]*x), from = 0, to = 1, 
+                     col = col.alpha("black", 0.3), add = TRUE)
+
+```
+
+```{r}
+# fit a model
+m11h6a <- ulam(
+  alist(
+    L ~ dpois(lambda),
+    log(lambda) <- a + b*B,
+    a ~ dnorm(0, 1),
+    b ~ dnorm(0, 1)
+  ), data = dat, chains = 4, cores = 4
+)
+
+precis(m11h6a)
+
+# posterior prediction
+B_seq <- seq(0, 1, length.out = 50)
+post_l <- link(m11h6a, data = data.frame(B = B_seq))
+l_mu <- apply(post_l, 2, mean)
+l_PI <- apply(post_l, 2, PI)
+plot(NULL, xlim = c(0, 1), ylim = c(0, 220),
+     xlab = "Log brain size (std)", ylab = "Social learning")
+points(dat$B, dat$L, col = "turquoise")
+lines(B_seq, l_mu)
+shade(l_PI, B_seq)
+
+# on a natural scale
+B_natural <- exp(B_seq*max(dat$log_b))
+plot(exp(dat$log_b), dat$L, col = "turquoise", 
+     xlim =range(B_natural), ylim = c(0, 220),
+     xlab = "Brain size", ylab = "Social learning")
+lines(B_natural, l_mu)
+shade(l_PI, B_natural)
+```
+This model indicates that social learning grows exponentially with brain size.
+
+(b) Some species are studied much more than others. So the number of reported instances of `social_learning` could be a product of research effort. Use the `research_effort` variable, specifically its logarithm, as an additional predictor variable. Interpret the coefficient for log `research_effort`. How does this model differ from the previous one?
+
+```{r}
+# add variables
+dat2 <- data.frame(
+  L = d$social_learning,
+  log_b = log(d$brain),
+  log_r = log(d$research_effort)
+)
+dat2 <- dat2[complete.cases(dat2$L, dat2$log_b, dat2$log_r),]
+dat2$B <- dat2$log_b/max(dat2$log_b) # standardize brain size
+dat2$R <- dat2$log_r/max(dat2$log_r)
+```
+
+```{r}
+# fit a model
+m11h6b <- ulam(
+  alist(
+    L ~ dpois(lambda),
+    log(lambda) <- a + bB*B + bR*R,
+    a ~ dnorm(0, 1),
+    c(bB,bR) ~ dnorm(0, 1)
+  ), data = dat2, chains = 4, cores = 4
+)
+
+precis(m11h6b)
+
+exp(coef(m11h6b))
+```
+
+One unit increase in log brain size would result in an increase of 11 social learning counts. This is a more conservative estimate of the effect of brain size on social learning than the model only containing brain size as a predictor.
+
+(c) Draw a DAG to represent how you think the variables `social_learning`, `brain`, and `research_effort` interact. Justify the DAG with the measured associations in the two models above (and any other models you used).
+
+```{r}
+dag3 <- dagitty("dag{ 
+                U[unobserved]
+                B <- U -> R; R -> L; B -> L}")
+coordinates(dag3) <- list(x = c(U = 0, B = 0, R = 1, L = 1),
+                          y = c(U = 0, B = 1, R = 0, L = 1))
+drawdag(dag3)
+```
+
+Stratifying by research effort reduces the causal effect of log brain size indicates that there might be a fork structure in the causal model. It is impossible for research effort to cause bigger brain, so there might be other variables causing both brain size and research effort. This might be the closeness to human being. The closeness can make species have similar big brain to homo sapiens, and it can also cause more curiosity to study them, resulting in more research effort in studying these species.
