@@ -436,7 +436,7 @@ shade(l2_PI, p_seq, col = col.alpha(4, 0.2))
 
 Here's the plot on a natural population scale:
 
-```{r, echo=TRUE, include=FALSE}
+```{r}
 plot(d$population, d$total_tools, 
      xlab = "population size", ylab = "total tools",
      ylim = c(0, 75), cex = 1+normalize(k), lwd = 1+4*normalize(k),
