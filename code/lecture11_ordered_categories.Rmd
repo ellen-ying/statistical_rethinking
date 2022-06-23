@@ -1,0 +1,469 @@
+---
+title: 'Lecture 11: Ordered Categories'
+author: "Yurun (Ellen) Ying"
+date: '2022-06-20'
+output: github_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(rethinking); library(dagitty); library(gtools)
+```
+
+## Over-dispersed count data
+
+### Beta-binomial model
+
+A beta-binomial model is a mixture of binomial distributions. We model the distribution of probabilities of success instead of a single probability. This distribution is a beta distribution and is controlled by two parameters $\bar{p}$ (the central tendency) and $\theta$ (dispersion).
+
+```{r}
+# varying pbar
+pbar <- seq(0, 1, length.out = 11)
+theta <- 5
+plot(NULL, xlim = c(0,1), ylim = c(0,4),
+     xlab = "Probability", ylab = "Density")
+for (pbar in pbar) curve(dbeta2(x, pbar, theta), from = 0, to = 1, 
+                         col = col.alpha(pbar*10+1, 0.5), lwd = 2, add = TRUE)
+
+# varying theta
+pbar <- 0.3
+theta <- c(1, 2, 3, 4, 5)
+plot(NULL, xlim = c(0,1), ylim = c(0,4),
+     xlab = "Probability", ylab = "Density")
+for (theta in theta) curve(dbeta2(x, pbar, theta), from = 0, to = 1, 
+                         col = col.alpha(theta, 0.5), lwd = 2, add = TRUE)
+```
+
+When $\theta < 2$, the distribution is so dispersed that extreme values near 0/1 are very likely. When $\theta > 2$, the distribution is concentrated.
+
+We fit the beta-binomial to the gender discrimination data. What it will do is to assign a probability of success to each row in the data. The model looks like this (we model the $\theta$ so that it is always bigger than 2):
+
+$A_i \sim \mathrm{BetaBinomial}(N_i, p_i, \theta)$
+
+$\mathrm{logit}(p_i) = \alpha_{GID[i]}$
+
+$\alpha_j \sim \mathrm{Normal}(0, 1.5)$
+
+$\theta = \phi + 2$
+
+$\phi \sim \mathrm{Exponential}(1)$
+
+```{r, include=FALSE}
+data("UCBadmit")
+d <- UCBadmit
+dat <- list(
+  A = d$admit,
+  N = d$applications,
+  gid = ifelse(d$applicant.gender == "male", 1, 2)
+)
+```
+
+```{r}
+m12.1 <- ulam(
+  alist(
+    A ~ dbetabinom(N, pbar, theta),
+    logit(pbar) <- a[gid],
+    a[gid] ~ dnorm(0, 1.5),
+    transpars> theta <<- phi + 2.0, # so that Stan return theta in the sample
+    phi ~ dexp(1)
+  ), data = dat, chains = 4
+)
+
+post <- extract.samples(m12.1)
+post$da <- post$a[,1] - post$a[,2]
+precis(post, depth = 2)
+```
+ 
+ There is little evidence for the admission rate to differ for men and women.
+ 
+ We can check how the beta distribution looks like by drawing samples of $p_i$ and $\theta_i$.
+ 
+```{r}
+gid <- 2
+# draw 50 samples
+plot(NULL, xlab = "Probability", ylab = "Density", xlim = c(0, 1), ylim = c(0, 3))
+for (i in 1:50){
+  curve(dbeta2(x, 
+             logistic(post$a[i,gid]),
+             post$theta[i]),
+        from = 0, to = 1, col = col.alpha("black", 0.3), add = TRUE)
+}
+
+# draw posterior mean beta distribution
+curve(dbeta2(x, 
+             mean(logistic(post$a[,gid])),
+             mean(post$theta)),
+      from = 0, to = 1, lwd = 3, col = "tomato", add = TRUE)
+mtext("Distribution of female admission rates")
+
+# posterior check agianst the empirical observations
+postcheck(m12.1)
+```
+ 
+The plots show that there is quite a lot of variation among departments and dispersion within departments. These variation accomodates the heterogeneity in the sample among department base rates.
+
+### Gamma-Poisson (negative-binomial) models
+
+Very similar to the beta-binomial model. Each row in the data has its own rate $\lambda$, and distribution of these rates is modeled by the a gamma distribution. It is controlled by two parameters $\lambda$ (mean) and $\phi$ (rate). The variance of a gamma-Poisson distribution is $\lambda + \lambda^2/\phi$.
+
+We will fit a model to the Oceanic tool example using the gamma-Poisson distribution:
+
+$T_i = \mathrm{GammaPoisson}(\lambda_i, \phi)$
+
+$\lambda_i = \alpha P_i^{\beta} / \gamma$
+
+```{r, include=FALSE}
+data("Kline")
+d <- Kline
+d$contact_id <- ifelse(d$contact == "high", 2L, 1L)
+
+dat2 <- list(
+  T = d$total_tools,
+  P = d$population,
+  cid = d$contact_id
+)
+```
+
+```{r}
+m12.2 <- ulam(
+  alist(
+    T ~ dgampois(lambda, phi),
+    lambda <- a[cid] * P^b[cid] / g,
+    a[cid] ~ dnorm(1, 1),
+    b[cid] ~ dexp(1),
+    g ~ dexp(1),
+    phi ~ dexp(1)
+  ), 
+  data = dat2, chains = 4, cores = 4, log_lik = TRUE
+)
+
+# posterior prediction
+k <- PSIS(m12.2, pointwise = TRUE)$k
+plot(d$population, d$total_tools, 
+     xlab = "population size", ylab = "total tools",
+     ylim = c(0, 75), cex = 1+normalize(k), lwd = 1+3*normalize(k),
+     col = ifelse(dat2$cid == "1", 2, 4))
+
+# pop seq
+p_seq <- seq(-5, 3, length.out = 100)
+pop_seq <- exp(p_seq*sd(log(d$population)) + mean(log(d$population)))
+# prediction for cid == 1
+lambda1 <- link(m12.2, data = data.frame(P = pop_seq, cid = 1))
+l1_mean <- apply(lambda1, 2, mean)
+l1_PI <- apply(lambda1, 2, PI)
+lines(pop_seq, l1_mean, col = 2)
+shade(l1_PI, pop_seq, col = col.alpha(2, 0.2))
+# prediction for cid == 2
+lambda2 <- link(m12.2, data = data.frame(P = pop_seq, cid = 2))
+l2_mean <- apply(lambda2, 2, mean)
+l2_PI <- apply(lambda2, 2, PI)
+lines(pop_seq, l2_mean, col = 4)
+shade(l2_PI, pop_seq, col = col.alpha(4, 0.2))
+```
+
+The curve for low contact islands bends less towards the influential case - Hawaii.
+
+
+## Zero-inflated/zero-augmented models
+
+Zero-inflated models are used when there are multiple ways that a zero value can arise in the dataset. We will look at the monastery example in Ch11. There may be two ways that a monk produce 0 manuscript on a particular day: 1) he drinks (with a probability of $p$), and 2) he works ($1-p$) but fails to produce anything ($Pr(0 \mid \lambda)$). In mathematical form, the probability of producing zero manuscript can be expressed as:
+
+$$
+\begin{aligned}
+\mathrm{Pr}(0 \mid p, \lambda) &= \mathrm{Pr}(\mathrm{drink} \mid p) + \mathrm{Pr}(\mathrm{work} \mid p) \mathrm{Pr}(0 \mid \lambda) \\
+&= p + (1-p) e^{-\lambda}
+\end{aligned}
+$$
+
+Simulate some data for this idea.
+
+```{r}
+# define parameters
+prob_drink <- 0.2 # 20% of days
+rate_work <- 1 # average 1 manuscript per day
+
+# sample one year of production 
+N <- 365
+
+# simulate days monks drink 
+set.seed(365)
+drink <- rbinom(N , 1, prob_drink)
+
+# simulate manuscripts completed
+y <- (1-drink)*rpois(N ,rate_work)
+```
+
+Our model is:
+
+$y_i \sim \mathrm{ZIPoisson}(p_i, \lambda_i)$
+
+$\mathrm{logit}(p_i) = \alpha_p + \beta_p x_i$
+
+$\mathrm{log}(\lambda_i) = \alpha_{\lambda} + \beta_{\lambda}x_i$
+
+```{r}
+# fit the model
+m12.3 <- ulam( 
+  alist(
+  y ~ dzipois( p , lambda ), 
+  logit(p) <- ap, 
+  log(lambda) <- al,
+  ap ~ dnorm(-1.5, 1), 
+  al ~ dnorm(1, 0.5)
+), data = list(y = y), chains = 4) 
+
+precis(m12.3)
+
+# posterior prediction
+post <- extract.samples(m12.3)
+mean(inv_logit(post$ap)) # probability drink
+mean(exp(post$al)) # rate finish manuscripts, when not drinking
+```
+
+
+## Ordered categorical models
+
+### Ordered categorical outcomes
+
+Categorical variables with an order, the distance between categories may not be constant. Psychological measures are an example.
+
+```{r}
+data("Trolley")
+d <- Trolley
+
+# histogram
+simplehist(d$response, xlim = c(1, 7), xlab = "response")
+
+# cumulative proportion
+pr_k <- table(d$response) / nrow(d)
+cum_pr_k <- cumsum(pr_k)
+plot(1:7, cum_pr_k, type = "b", ylim = c(0, 1),
+     xlab = "response", ylab = "cumulative proportion")
+
+# transform into log-cumulative-odds
+logit <- function(x) log(x/(1-x))
+l_cum_odd <- logit(cum_pr_k)
+plot(1:7, l_cum_odd, type = "b", ylim = c(-2, 2),
+     xlab = "response", ylab = "log cumulative odds")
+```
+
+
+In the model, we model 6 cut-off points and link them (log-cumulative-odds) to linear combination of predictors. These points are transformed into probabilities for each event type through the expression:
+
+$p_k = \mathrm{Pr}(y_i = k) = \mathrm{Pr}(y_i \le k) - \mathrm{Pr}(y_i \le k-1)$
+
+The model in a simple format:
+
+$R_i \sim \mathrm{Ordered}$-$\mathrm{logit}(\phi_i, \kappa)$
+
+$\phi_i = \mathrm{linear \space model}$
+
+$\kappa_k \sim \mathrm{Normal}(0, 1.5)$
+
+In essence, this means:
+
+$R_i \sim \mathrm{Categorical}(p)$
+
+$p_1 = q_1$
+
+$p_k = q_k - q_{k-1}$ For $K > k > 1$
+
+$q_K =1 - q_{K-1}$
+
+$\mathrm{logit} = \kappa_k - \phi_i$
+
+$\phi_i = \mathrm{linear \space model}$
+
+$\kappa_k \sim \mathrm{Normal}(0, 1.5)$
+
+
+```{r}
+# a model of intercept only
+# m12.4 <- ulam(
+#   alist(
+#     R ~ dordlogit(0, cutpoints),
+#     cutpoints ~ dnorm(0, 1.5)
+#   ), data = list(R = d$response), chains = 4, cores = 4
+# )
+
+# comment out to save time in knitting
+```
+
+We will model the responses with three conditions - whether each of the three types of outcomes is present. We will also include interaction terms of A\*I and C\*I:
+
+$\phi_i = \beta_A A_i+\beta_C C_i + \mathrm{B}_{I,i}I_i$
+
+$\mathrm{B}_{I,i} = \beta_I + \beta_{IA} A_i + \beta_{IC}C_i$
+
+```{r}
+dat <- list(
+  R = d$response,
+  A = d$action,
+  I = d$intention,
+  C = d$contact
+)
+
+m12.5 <- ulam(
+  alist(
+    R ~ dordlogit(phi, cutpoints),
+    phi <- bA*A + bC*C + BI*I,
+    BI <- bI + bIA*A + bIC*C,
+    c(bA,bC,bI,bIA,bIC) ~ dnorm(0, 0.5),
+    cutpoints ~ dnorm(0, 1.5)
+  ), data = dat, chains = 4, cores = 4
+)
+
+precis(m12.5)
+
+# posterior distribution of parameters
+plot(precis(m12.5), xlim = c(-1.4, 0))
+```
+
+The simultaneous presence of contact and intention has the strongest effect on the ratings. It increases the probability on the scores on the lower end.
+
+Plot by conditions action = 0 and contact = 0 against the raw data.
+
+```{r}
+# similar plots can be drawned for other combinations
+plot(NULL, type = "n", xlab = "intention", ylab = "probability",
+     xlim = c(0,1), ylim = c(0,1), xaxp = c(0,1,1), yaxp = c(0,1,2))
+
+kA <- 0 # value for action
+kC <- 0 # value for contact
+kI <- 0:1 # values for intention to calculate over
+pdat <- data.frame(A=kA, C=kC, I=kI)
+phi <- link(m12.5, dat = pdat)$phi
+
+# plot the prediction
+post <- extract.samples(m12.5)
+for (s in 1:50){
+  pk <- pordlogit(1:6, phi[s,], post$cutpoints[s,])
+  for (i in 1:6) lines(kI, pk[,i], col = grau(0.1))
+}
+
+#plot the raw data
+A0C0 <- d[which(d$action==0 & d$contact==0),]
+A0C0_freq <- table(A0C0$response, A0C0$intention)
+cum0 <- cumsum(A0C0_freq[,1]); pro0 <- cum0/cum0[7]
+cum1 <- cumsum(A0C0_freq[,2]); pro1 <- cum1/cum1[7]
+points(rep(0,6), pro0[1:6], col = rangi2, pch = 16)
+points(rep(1,6), pro1[1:6], col = rangi2, pch = 16)
+
+mtext("action=0, contact=0")
+```
+
+Plot the posterior predictive simulation of responses when intention = 0 (black) and intention = 1 (purple)
+
+```{r}
+s <- sim(m12.5, data=pdat)
+s_0 <- table(s[,1])
+s_1 <- table(s[,2])
+
+plot(NULL, type = "n", xlab = "response", ylab = "Density",
+     xlim = c(1,7), ylim = c(0,250), xaxp = c(1,7,6))
+for (i in 1:7) {
+  lines(c(i,i), c(0,s_0[i]), lwd = 3)
+  lines(c(i+0.1,i+0.1), c(0,s_1[i]), lwd = 3, col = rangi2)
+}
+```
+
+
+### Order categorical predictors
+
+Now let's think of the causal structure of the `Trolley` data. Here's a DAG. S=story, E=education, Y=age, G=gender, P=participation.
+
+```{r}
+dag1 <- dagitty("dag{
+                P[unobserved]
+                X -> R <- S;
+                E -> R; Y -> R; G -> R;
+                Y -> E; G -> E
+                P <- E; P <- Y; P <- G}")
+coordinates(dag1) <- list(x = c(X = 0.35, R = 0.5, S = 0.65, 
+                                E = 0.5, Y = 0.6, G = 0.4,
+                                P = 0.5),
+                          y =c(X = 0, R = 0, S = 0, 
+                                E = 0.5, Y = 0.5, G = 0.5,
+                                P = 1))
+drawdag(dag1)
+```
+
+In addition to the treatment, there are also demographic variables influencing responses. These variables also influence whether people voluntarily participate in the study. Since our data is conditioned on participation, we are conditioning on a collider. If we want to estimate th effect of demographics on responses, we need to stratify by all of them.
+
+The education level in the `Trolley` data is also an order categorical variable. To model this variable, we need additional tricks.
+
+```{r}
+# coding the educational levels
+edu_levels <- c(6, 1, 8, 4, 7, 2, 5, 3) 
+d$edu_new <- edu_levels[d$edu]
+```
+
+Our model looks like this:
+
+$R_i \sim \mathrm{Ordered}$-$\mathrm{logit}(\phi_i,\kappa)$
+
+$$\phi_i = \beta_E \sum_{j=0}^{E_i-1}\delta_j + \beta_A A_i + \beta_I I_i + \beta_c C_i$$
+
+In this expression, $\beta_E$ is the maximum effect of education, $\delta_j$ is the proportion of the maximum effect brought by each increment in the educational level. $E_i$ is the educational level of each individual, and the sum represents adding the increments to this educational level, which is the effect of education up to this level after multiplied by the maximum effect.
+
+$\delta$ is a vector of increments, which should add to one. To model this simplex, we need to use the Dirichlet distribution. This is a multivariate version of the beta distribution.
+
+```{r}
+set.seed(1805)
+# take in a vector of parameters of the same length as the simplex we want to model
+delta <- rdirichlet(10, alpha = rep(2, 7)) 
+
+# plot the distribution
+h <- 3
+plot(NULL, xlim = c(1,7), ylim = c(0,0.4), 
+     xlab = "index", ylab = "probability")
+for (i in 1:nrow(delta)) 
+  lines(1:7, delta[i,], type = "b",
+        pch = ifelse(i == h, 16, 1), lwd = ifelse(i == h, 4, 1.5),
+        col = ifelse(i == h, "black", col.alpha("black", 0.7)))
+```
+
+Fit the model to the data
+
+```{r}
+dat$E = as.integer(d$edu_new) # edu_new as index
+dat$alpha <- rep(2, 7) # delta prior
+
+m12.6 <- ulam(
+  alist(
+    R ~ dordlogit(phi, kappa),
+    phi <- bE*sum(delta_j[1:E]) + bA*A + bI*I + bC*C,
+    kappa ~ normal(0, 1.5),
+    c(bA,bI,bC,bE) ~ normal(0, 1),
+    vector[8]: delta_j <<- append_row(0, delta),
+    simplex[7]: delta ~ dirichlet(alpha)
+  ),
+  data = dat, chains = 4, cores = 4
+)
+
+precis(m12.6, depth = 2, omit = "kappa")
+```
+
+The coefficient of education is negative, suggesting that the effect of education is to reduce people's approval of everything.
+
+Note that this estimate might be biased, assuming our causal model is true. A model including all demographic variables can tell us the direct effect of them, but since they are confounded by participation, an estimation of total effect is not possible using our data.
+
+```{r}
+# dat$gid <- d$male
+# dat$Y <- d$age
+# 
+# m12.7 <- ulam(
+#   alist(
+#     R ~ dordlogit(phi, kappa),
+#     phi <- bE[gid]*sum(delta_j[1:E]) + bY[gid]*Y + bA[gid]*A + bI[gid]*I + bC[gid]*C,
+#     kappa ~ normal(0, 1.5),
+#     c(bA[gid],bI[gid],bC[gid],bE[gid],bY[gid]) ~ normal(0, 1),
+#     vector[8]: delta_j <<- append_row(0, delta),
+#     simplex[7]: delta ~ dirichlet(alpha)
+#   ),
+#   data = dat, chains = 4, cores = 4
+# )
+```
+
