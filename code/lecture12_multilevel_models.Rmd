@@ -1,0 +1,187 @@
+---
+title: 'Lecture 12: Multilevel Models'
+author: "Yurun (Ellen) Ying"
+date: '2022-06-23'
+output: github_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(rethinking)
+```
+
+## Multilevel tadpoles
+
+```{r}
+data("reedfrogs")
+d <- reedfrogs
+head(d)
+```
+
+In this data, we are interested in the survival rate in each tank (row). There are a lot of variation among tanks that are unmeasured, and observations of individual tadpoles were made within each tank. The tanks in this case are an example of clusters. To make sense of data with clusters, we need multilevel models.
+
+This is because we don't want to assign the same intercept to all the tanks, which will miss the variation in survival rate among the tanks. We don't want to assign a unique intercept to each tank, because this will prevent tanks to provide important information in estimating survival rate in other tanks. Multilevel models can allow us to capture both the uniqueness of each tank as well as the variation among tanks. This is a model of varying intercepts, a simple kind of varying effects. 
+
+This will be our model:
+
+$S_i \sim \mathrm{Binomial}(N_i, p_i)$
+
+$\mathrm{logit}(p_i) = \alpha_{TANK[i]}$
+
+$\alpha_j \sim \mathrm{Normal}(\bar{\alpha}, \sigma)$
+
+$\bar{\alpha} \sim \mathrm{Normal}(0, 1.5)$
+
+$\sigma \sim \mathrm{Exponential}(1)$
+
+In where we usually insert predefined mean and sd to $\alpha_i$, new parameters are used. These are hyperparameters, are models within a model. This is where the "multi" come from.
+
+```{r}
+# make the tank cluster variable
+d$tank <- 1:nrow(d)
+
+# a clean data
+dat <- list(
+  S = d$surv,
+  N = d$density,
+  tank = d$tank
+)
+
+# a unique intercept to each tank
+m13.1 <- ulam(
+  alist(
+    S ~ dbinom(N, p),
+    logit(p) <- a[tank],
+    a[tank] ~ dnorm(0, 1.5)
+  ), data = dat, chains = 4, log_lik = TRUE
+)
+
+# a multilevel model
+m13.2 <- ulam(
+  alist(
+    S ~ dbinom(N, p),
+    logit(p) <- a[tank],
+    a[tank] ~ dnorm(a_bar, sigma),
+    a_bar ~ dnorm(0, 1.5),
+    sigma ~ dexp(1)
+  ), data = dat, chains = 4, log_lik = TRUE
+)
+
+precis(m13.2, pars = c("a_bar", "sigma"))
+```
+
+We can see the multilevel model automatically assign mean and sd to the normal distribution of $\alpha$. These are regularizing priors, but are adaptively learned by the model.
+
+Compare the multilevel model with the fixed intercept model
+
+```{r}
+# the multilevel model makes better predictions
+compare(m13.1, m13.2)
+
+# plotting the predictions to the raw data
+post <- extract.samples(m13.2)
+d$propsurv.est <- logistic(apply(post$a, 2, mean))
+plot(d$propsurv, ylim = c(0,1), pch = 16, xaxt = "n",
+     xlab = "tank", ylab = "proportion survival", col = rangi2)
+axis(1, at = c(1, 16, 32, 48), labels = c(1, 16, 32, 48))
+# posterior prediction
+points(d$propsurv.est)
+# mean in the data and posterior mean across tanks
+abline(h = mean(d$propsurv), lty = 2, col = rangi2)
+abline(h = mean(inv_logit(post$a_bar)), lty = 2)
+# draw vertical lines between tank densities
+abline(v = 16.5, lwd = 0.5)
+abline(v = 32.5, lwd = 0.5)
+text(8, 0, "small tanks")
+text(16+8, 0, "medium tanks")
+text(32+8, 0, "large tanks")
+```
+
+Three observations:
+
+- Predicted values are closer to the mean than the empirical values
+- Predictions for small tanks shrink more than those for bigger tanks
+- When the empirical values are far from the mean, the predictions shrink more
+
+Sample from the posterior distributions to see the distribution of survival
+
+```{r}
+# show first 100 populations in the posterior
+plot(NULL, xlim = c(-3, 4), ylim = c(0, 0.35),
+     xlab = "log-odds survival", ylab = "Density")
+for (i in 1:100)
+  curve(dnorm(x, post$a_bar[i], post$sigma[i]), add = TRUE,
+        col = col.alpha("black", 0.2))
+curve(dnorm(x, mean(post$a_bar), mean(post$sigma)), add = TRUE,
+      col = "tomato", lwd = 3)
+
+# simulate survival rate in tanks
+sim_tanks <- rnorm(8000, post$a_bar, post$sigma)
+dens(inv_logit(sim_tanks), lwd = 2, adj = 0.1, xlab = "survival probability")
+```
+
+
+### Multilevel model and predictive accuracy
+
+Multilevel models do a good job in trading off overfitting and underfitting, so they do better job in making predictions. 
+
+- Complete pooling = fixed intercept for all clusters = too little flexibility in the model = underfitting
+- No pooling = unique intercept for all clusters = too much flexibility in the model = overfitting
+- Partial pooling = unique intercept for all clusters and model the population trend = balance = good predictions
+
+Let's see how multilevel models can help us optimize the prediction accuracy. We will fit a series of ordinary binomial GLMs to the data cna calculate the predictive accuracy. And we will check where our multilevels lies.
+
+```{r}
+sigma_seq <- seq(0.1, 4, length.out = 10)
+m_waic <- rep(0, 10)
+std_err <- rep(0, 10)
+
+for (i in 1:10) {
+  
+  # new data including the sigma value
+  sigma <- sigma_seq[i]
+  
+  dat2 <- list(
+    S = d$surv,
+    N = d$density,
+    tank = d$tank,
+    sigma = sigma
+  )
+  
+   # model
+  m <- ulam(
+    alist(
+      S ~ dbinom(N, p),
+      logit(p) <- a[tank],
+      a[tank] ~ dnorm(0, sigma)
+    ), data = dat2, chains = 4, cores = 4, log_lik = TRUE
+  )
+  
+  # record the WAIC
+  m_waic[i] <- WAIC(m)$WAIC
+  std_err[i] <- WAIC(m)$std_err
+}
+
+# the multilevel results
+multi_par <- precis(m13.2, pars = c("a_bar", "sigma"))$mean
+multi_waic <- WAIC(m13.2)$WAIC
+multi_err <- WAIC(m13.2)$std_err
+
+# plot
+plot(NULL, xlab = "sigma", ylab = "WAIC score",
+     xlim = range(sigma_seq), ylim = c(200, 800), xaxt = "n")
+axis(1, at = sigma_seq, labels = round(sigma_seq, 1))
+points(sigma_seq, m_waic, lwd = 3, type = "b", col = "tomato")
+for (i in 1:10) 
+  lines(rep(sigma_seq[i], 2), 
+        c(m_waic[i]-std_err[i], m_waic[i]+std_err[i]),
+        lwd = 6, col = col.alpha("tomato", 0.5))
+points(multi_par[2], multi_waic, lwd = 3)
+lines(rep(multi_par[2], 2), 
+      c(multi_waic-multi_err, multi_waic+multi_err),
+      lwd = 6, col = col.alpha("black", 0.3))
+```
+
+The multilevel model has an accuracy comparable to or even better than the best regularizing sigma.
