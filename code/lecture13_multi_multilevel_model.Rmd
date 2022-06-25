@@ -1,0 +1,260 @@
+---
+title: 'Lecture 13: Multi-Multilevel Model'
+author: "Yurun (Ellen) Ying"
+date: '2022-06-25'
+output: github_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(rethinking)
+```
+
+
+## Multiple clusters
+
+We will revisit the chimpanzee data. This time we want to consider both how treatment and block (experiment days) affect the outcome (pulling left lever). We will use a full interaction model:
+
+$P_i \sim \mathrm{Bernoulli}(p_i)$
+
+$\mathrm{logit}(p_i) = \alpha_{A[i]} + \beta_{T[i], B[i]}$
+
+$\alpha_j \sim \mathrm{Normal}(\bar{\alpha}, \sigma_{\alpha})$
+
+$\beta_{j,k} \sim \mathrm{Normal}(0, \sigma_{\beta})$
+
+$\bar{\alpha} \sim \mathrm{Normal}(0, 1.5)$
+
+$\sigma_{\alpha}, \sigma_{\beta} \sim \mathrm{Exponential}(1)$
+
+```{r, include=FALSE}
+data("chimpanzees")
+d <- chimpanzees
+d$treatment <- 1 + d$prosoc_left + 2*d$condition
+```
+
+```{r}
+# clean data
+dat <- list(
+  P = d$pulled_left,
+  A = d$actor,
+  B = d$block,
+  T = d$treatment
+)
+
+m13.4 <- ulam(
+  alist(
+    P ~ bernoulli(p),
+    logit(p) <- a[A] + b[T,B],
+    # adaptive priors
+    a[A] ~ dnorm(a_bar, sigma_a),
+    matrix[T,B]:b ~ dnorm(0, sigma_b),
+    # hyperpriors
+    a_bar ~ dnorm(0, 1.5),
+    c(sigma_a, sigma_b) ~ dexp(1)
+  ), data = dat, chains = 4, cores = 4
+)
+
+precis(m13.4, 3, pars = c("a_bar", "sigma_a", "sigma_b"))
+```
+
+Plot the posterior distribution
+
+```{r}
+post <- extract.samples(m13.4)
+
+# actor (handedness) effect
+mean_a <- apply(inv_logit(post$a), 2, mean)
+PI_a <- apply(inv_logit(post$a), 2, PI)
+plot(NULL, xlab = "actor", ylab = "probability pull left",
+     xlim = c(1, 7), ylim = c(0,1))
+abline(h = 0.5, lty = 2)
+points(1:7, mean_a, lwd = 4, cex = 1, col = "orchid")
+for(i in 1:length(mean_a)) lines(c(i,i), c(PI_a[1,i], PI_a[2,i]), lwd = 7, col = col.alpha("orchid", 0.5))
+
+# variation
+dens(post$sigma_a, lwd = 3, col = "orchid", xlab = "sigma A")
+```
+
+Four actors appeared to be right-handed, and three actors appeared to be left-handed.
+
+```{r}
+# treatment effects
+mean_b <- apply(post$b, c(2,3), mean)
+plot(NULL, xlab = "treatment", ylab = "log-odds",
+     xlim = c(0.5, 4.5), ylim = c(-2,2), xaxt = "n")
+axis(1, at = c(1, 2, 3, 4), labels = c("R/N", "L/N", "R/P", "L/P"))
+abline(h = 0, lty = 2)
+for(i in 1:4) {
+  for (j in 1:6) points(i+runif(1, -.15,.15), mean_b[i,j], cex = 1, lwd = 3, col = "seagreen")
+}
+
+# variation
+dens(post$sigma_b, lwd = 3, col = "seagreen", xlab = "sigma B")
+```
+
+
+Treatment/block has little effects and less variation than the actor effect.
+
+
+## Posterior prediciton of mutilevel models
+
+When doing posterior predictions for multilevel models, we need to carefully consider how to incorporate the varying effects into the simulation, especially when using a hypothetical new population. We don't want to use the structure in the original data; rather we will simulate the varying effects from a distribution of the population.
+
+```{r, include=FALSE}
+data(reedfrogs)
+d <- reedfrogs
+
+dat <- list(
+    S = d$surv,
+    D = d$density,
+    T = 1:nrow(d),
+    P = ifelse( d$pred=="no" , 1L , 2L ),
+    G = ifelse( d$size=="small" , 1L , 2L )
+)
+```
+
+We use the reedfrog example. We will try to explore the causal effect of changing size distribution: Target population high density 35, 50% groups have predation. 25% large. Intervention makes 75% large. wWat is change in survival?
+
+```{r}
+mSPG <- ulam(
+  alist(
+      S ~ binomial(D ,p),
+      logit(p) <- a[T] + b[P,G],
+      a[T] ~ normal(0, sigma),
+      matrix[P,G]:b ~ normal(0, 1),
+      sigma ~ exponential(1)
+  ), data=dat, chains=4, cores=4)
+
+post <- extract.samples(mSPG)
+
+# sim first under status quo
+n_groups <- 1000
+n_samples <- 2000
+S1 <- matrix(0, nrow = n_samples, ncol = n_groups)
+for ( s in 1:n_groups ) {
+    # sim a tank from posterior population
+    aT <- rnorm(n_samples,0,post$sigma)
+    # sample P and G for this group
+    P <- sample(1:2, size=1, prob = c(0.5, 0.5)) # 50% pred
+    G <- sample(1:2, size=1, prob = c(0.75, 0.25)) # 25% large
+    # sim survival
+    p <- inv_logit(aT + post$b[,P,G])
+    S1[,s] <- rbinom(n_samples, 35, p)
+}
+
+# intervention - 50% large
+S2 <- matrix(0, nrow = n_samples, ncol = n_groups)
+for ( s in 1:n_groups ) {
+    # sim a tank from posterior population
+    aT <- rnorm(n_samples, 0, post$sigma)
+    # sample P and G for this group
+    P <- sample(1:2 ,size=1, prob=c(0.5,0.5)) # 50% pred
+    G <- sample(1:2 ,size=1, prob=c(0.25,0.75)) # 75% large
+    # sim survival
+    p <- inv_logit(aT + post$b[,P,G])
+    S2[,s] <- rbinom(n_samples, 35, p)
+}
+
+simplehist(as.numeric(S1), lwd=4, col=2, xlab="number surviving")
+simplehist(as.numeric(S2), lwd=4, col=2, xlab="number surviving")
+
+x <- table(as.numeric(S2 - S1))
+x <- x/sum(x)
+
+plot(NULL, xlim = c(-35,35), ylim = c(0,max(x)), 
+     xlab = "change in survival", ylab = "proportion of simulation")
+for (i in 1:length(x)) {
+    xvals <- as.numeric(names(x))
+    lines(rep(xvals[i], 2), c(0, x[i]), lwd = 4, col = ifelse(xvals[i]<0, 2, 4))
+}
+
+abline(v = mean(as.numeric(S2 - S1)), lty = 3, lwd = 3)
+
+```
+
+
+## Sampling issues in multilevel models
+
+Multilevel models often have joint distributions with steep surfaces, which can make HMC sample inefficiently. The solution is to use non-centered parameters instead of centered parameters.
+
+Centered parameters:
+
+$v \sim \mathrm{Normal}(0, 3)$
+
+$x \sim \mathrm{Normal}(0, \mathrm{exp}(v))$
+
+Non-centered parameters:
+
+$v \sim \mathrm{Normal}(0, 3)$
+
+$z \sim \mathrm{Normal}(0, 1)$
+
+$x = z\mathrm{exp}(v)$
+
+The two are equivalent. The non-centered parameters essentially ask HMC to sample from a joint distribution of two Gaussian distributions and construct the variable afterwards. This makes sampling more efficient.
+
+In the context of the chimp model, we will write this:
+
+$P_i \sim \mathrm{Bernoulli}(p_i)$
+
+$$\begin{aligned}
+\mathrm{logit}(p_i) &= \bar{\alpha} + z_{\alpha, A[i]}\sigma_{\alpha} \\
+&+ z_{\beta, T[i], B[i]}\sigma_{\beta}
+\end{aligned}$$
+
+$z_{\alpha, j} \sim \mathrm{Normal}(0, 1)$
+
+$z_{\beta, j} \sim \mathrm{Normal}(0, 1)$
+
+$\bar{\alpha} \sim \mathrm{Normal}(0, 1.5)$
+
+$\sigma_{\alpha}, \sigma_{\beta} \sim \mathrm{Exponential}(1)$
+
+```{r, include=FALSE}
+d <- chimpanzees
+d$treatment <- 1 + d$prosoc_left + 2*d$condition
+dat <- list(
+  P = d$pulled_left,
+  A = d$actor,
+  B = d$block,
+  T = d$treatment
+)
+```
+
+
+```{r}
+m13.4nc <- ulam(
+  alist(
+    P ~ bernoulli(p),
+    logit(p) <- a_bar + z_a[A]*sigma_a + z_b[T,B]*sigma_b,
+    # adaptive priors
+    z_a[A] ~ dnorm(0, 1),
+    matrix[T,B]:z_b ~ dnorm(0, 1),
+    # hyperpriors
+    a_bar ~ dnorm(0, 1.5),
+    c(sigma_a, sigma_b) ~ dexp(1),
+    # generated quantities
+    gq> vector[A]:a <<- a_bar + z_a*sigma_a,
+    gq> matrix[T,B]:b <<- z_b*sigma_b
+  ), data = dat, chains = 4, cores = 4
+)
+```
+
+Plot the effective sample size against the centered model.
+
+```{r}
+the_pars <- c("a_bar", "sigma_a", "sigma_b", "b", "a")
+precis_c <- precis(m13.4, depth = 3, pars = the_pars)
+precis_nc <- precis(m13.4nc, depth =3 , pars = the_pars)
+neff_table <- cbind(precis_c[,"n_eff"], precis_nc[,"n_eff"])
+cols <- ifelse(neff_table[,1] > neff_table[,2], 2, 4)
+plot(neff_table, xlim = range(neff_table), ylim = range(neff_table),
+    xlab = "effective sample size (centered)", ylab = "effective sample size (non-centered)",
+    lwd = 3, col = cols)
+abline(a = 0, b = 1, lty = 2)
+
+```
+
