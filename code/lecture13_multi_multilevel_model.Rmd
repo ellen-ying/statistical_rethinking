@@ -116,7 +116,7 @@ dat <- list(
 )
 ```
 
-We use the reedfrog example. We will try to explore the causal effect of changing size distribution: Target population high density 35, 50% groups have predation. 25% large. Intervention makes 75% large. wWat is change in survival?
+We use the reedfrog example. We will try to explore the causal effect of changing size distribution: Target population high density 35, 50% groups have predation. 25% large. Intervention makes 75% large. What is the change in survival?
 
 ```{r}
 mSPG <- ulam(
