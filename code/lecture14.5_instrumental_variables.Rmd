@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, results="hide")
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(rethinking); library(dagitty)
 ```
 
@@ -62,7 +62,7 @@ E_i
 \mu_{E,i} &= \alpha_E + \beta_{QE}Q_i
 \end{aligned}$$
 
-```{r}
+```{r, results="hide"}
 m <- ulam(
   alist(
     c(W,E) ~ multi_normal(c(muW,muE), Rho, Sigma),
@@ -74,8 +74,11 @@ m <- ulam(
     Sigma ~ exponential(1)
   ), data = dat_sim, chains = 4, cores = 4
 )
-
-precis(m, depth = 3)
 ```
+
+```{r}
+round(precis(m, depth = 3), 2)
+```
+
 
 The influence of E on W is around zero, which reflects the true causal influence. The correlation between E and W is reliably positive, reflecting the common cause U.

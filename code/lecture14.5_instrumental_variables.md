@@ -85,9 +85,23 @@ m <- ulam(
     Sigma ~ exponential(1)
   ), data = dat_sim, chains = 4, cores = 4
 )
-
-precis(m, depth = 3)
 ```
+
+``` r
+round(precis(m, depth = 3), 2)
+```
+
+    ##           mean   sd  5.5% 94.5%   n_eff Rhat4
+    ## aE        0.00 0.03 -0.06  0.05 1287.37     1
+    ## aW        0.00 0.05 -0.08  0.07 1441.71     1
+    ## bQE       0.59 0.04  0.53  0.65 1312.64     1
+    ## bEW      -0.04 0.08 -0.17  0.07 1018.13     1
+    ## Rho[1,1]  1.00 0.00  1.00  1.00     NaN   NaN
+    ## Rho[1,2]  0.54 0.05  0.45  0.62  809.52     1
+    ## Rho[2,1]  0.54 0.05  0.45  0.62  809.52     1
+    ## Rho[2,2]  1.00 0.00  1.00  1.00     NaN   NaN
+    ## Sigma[1]  1.02 0.05  0.95  1.10 1058.94     1
+    ## Sigma[2]  0.81 0.02  0.77  0.85 1749.66     1
 
 The influence of E on W is around zero, which reflects the true causal
 influence. The correlation between E and W is reliably positive,
