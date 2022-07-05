@@ -90,8 +90,8 @@ G_{AB} &\sim \mathrm{Poisson}(\lambda_{AB}) \\
 G_{BA} &\sim \mathrm{Poisson}(\lambda_{BA}) \\
 \mathrm{log}(\lambda_{BA}) &= \alpha + T_{BA} \\
 \begin{pmatrix}
-\lambda_{AB} \\
-\lambda_{BA}
+T_{AB} \\
+T_{BA}
 \end{pmatrix} &\sim \mathrm{MVNormal}(
 \begin{bmatrix}
 0 \\
@@ -136,7 +136,9 @@ sim_data <- list(
     HB = dyads[,2],
     GAB = giftsAB,
     GBA = giftsBA )
+```
 
+```{r, results='hide'}
 # run the model with ulam
 mGD <- ulam(f_dyad, data = sim_data, chains = 4, cores = 4, iter = 2000)
 ```
@@ -204,9 +206,13 @@ kl_data <- list(
     HB = kl_dyads$hidB,
     GAB = kl_dyads$giftsAB,
     GBA = kl_dyads$giftsBA )
+```
 
+```{r, results='hide'}
 mGDkl <- ulam(f_dyad, data = kl_data, chains = 4, cores = 4, iter = 4000)
+```
 
+```{r}
 precis(mGDkl, depth = 3, pars = c("a", "Rho_T", "sigma_T"))
 ```
 
@@ -244,8 +250,8 @@ G_{AB} &\sim \mathrm{Poisson}(\lambda_{AB}) \\
 G_{BA} &\sim \mathrm{Poisson}(\lambda_{BA}) \\
 \mathrm{log}(\lambda_{BA}) &= \alpha + T_{BA} + G_B + R_A\\
 \begin{pmatrix}
-\lambda_{AB} \\
-\lambda_{BA}
+T_{AB} \\
+T_{BA}
 \end{pmatrix} &\sim \mathrm{MVNormal}(
 \begin{bmatrix}
 0 \\
@@ -311,10 +317,14 @@ sim_data <- list(
     HB = dyads[,2],
     GAB = giftsAB,
     GBA = giftsBA )
+```
 
+```{r, results='hide'}
 # run the model with ulam
 mGDR <- ulam(f_general, data = sim_data, chains = 4, cores = 4, iter = 2000)
+```
 
+```{r}
 precis(mGDR, depth = 3, pars = c("a", "Rho_T", "sigma_T", "Rho_gr", "sigma_gr"))
 ```
 
@@ -361,9 +371,11 @@ The correlation within dyads is even stronger in this model, being pushed all th
 
 ### The real data with generalized giving and receiving
 
-```{r}
+```{r, results='hide'}
 mGDRkl <- ulam(f_general, data = kl_data, chains = 4, cores = 4, iter = 4000)
+```
 
+```{r}
 # generalized giving against receiving
 postGDRkl <- extract.samples(mGDRkl)
 post_gg <- sapply(1:N, function(i) exp(postGDRkl$a + postGDRkl$gr[,i,1]))
@@ -465,11 +477,12 @@ kl_data <- list(
     GBA = kl_dyads$giftsBA,
     W = standardize(kl_households$hwealth), # wealth
     A = standardize(kl_dyads$dass) ) # association index - time spent together
+```
 
+```{r, results='hide'}
 # fit the model
 mGDRAkl <- ulam(f_house, data = kl_data, chains = 4, cores = 4, iter = 4000)
 ```
-
 
 ```{r}
 postGDRAkl <- extract.samples(mGDRAkl)
