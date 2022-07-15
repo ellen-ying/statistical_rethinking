@@ -1,0 +1,109 @@
+---
+title: 'Lecture 18.5: Discrete Missing'
+author: "Yurun (Ellen) Ying"
+date: '2022-07-15'
+output: github_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(rethinking); library(dagitty); library(ape)
+```
+
+## Missing in discreate variables
+
+Monte Carlo can't sample from distribution of discrete variables. So we need additional tricks to model discrete missing values using Bayesian imputation.
+
+Here is toy example. Suppose each house has a song bird and we have collected information on how many notes the bird produce. Some houses also have cats, and we would like to know whether the presence of cats influence the number of notes. However, in 20% of household, we don't have the data of cat presence. Suppose the cats are missing at random.
+
+Let's build a generative model:
+
+$$\begin{aligned}
+N_i &\sim \mathrm{Poisson}(\lambda_i) \\
+\mathrm{log}\lambda_i &\sim \alpha + \beta C_i \\
+C_i &\sim \mathrm{Bernoulli}(k) \\
+R_{C,i} &\sim \mathrm{Bernoulli}(r)
+\end{aligned}$$
+
+```{r}
+# simulated the data
+set.seed(9)
+N <- 100L
+alpha <- 5
+beta <- -3
+k <- 0.5 # prob of having cats
+r <- 0.2 # prob of missing data
+cat <- rbern(N, k)
+notes <- rpois(N, alpha + beta*cat)
+R_C <- rbern(N, r) # household missing cat data
+cat_obs <- ifelse(R_C == 1, -9L, cat)
+dat <- list(notes = notes, cat = cat_obs, RC = R_C, N = as.integer(N))
+```
+
+To model the presence of cats when the data is missing, we need to calculate the probability of the number of notes averaged over the probability distribution of cat presence:
+
+$\mathrm{P}(N_i) = \mathrm{P}(C_i = 1) \mathrm{P}(N_i \mid C_i = 1) + \mathrm{P}(C_i = 0) \mathrm{P}(N_i \mid C_i = 0)$
+
+In code
+
+```{r, results='hide'}
+m15.8 <- ulam(
+  alist(
+    # singing bird model
+    ## cat known
+    notes|RC==0 ~ poisson(lambda),
+    log(lambda) <-  a + b*cat,
+    ## cat missing
+    notes|RC==1 ~ custom(
+      log_sum_exp(log(k) + poisson_lpmf(notes | exp(a + b)),
+                  log(1-k) + poisson_lpmf(notes | exp(a)))
+      ),
+      
+    # priors
+    a ~ normal(0, 1),
+    b ~ normal(0, 0.5),
+    
+    # sneaking cat model
+    cat|RC==0 ~ bernoulli(k),
+    k ~ beta(2, 2),
+    
+    # imputed values
+    gq> vector[N]:PrC1 <- exp(lpC1)/(exp(lpC1) + exp(lpC0)),
+    gq> vector[N]:lpC1 <- log(k) + poisson_lpmf(notes[i] | exp(a + b)),
+    gq> vector[N]:lpC0 <- log(1-k) + poisson_lpmf(notes[i] | exp(a))
+    ) , data = dat, chains = 4, cores = 4
+  )
+```
+
+```{r}
+precis(m15.8)
+```
+
+We can check this against the original data
+
+```{r}
+post <- extract.samples(m15.8)
+c_imp_mu <- apply(post$PrC1, 2, mean)
+c_imp_PI <- apply(post$PrC1, 2, PI)
+c_imp_mu_miss <- c_imp_mu[R_C == 1]
+c_imp_PI_miss <- c_imp_PI[,R_C == 1]
+
+
+# empirical data
+n_miss <- sum(R_C)
+cat_miss <- cat[R_C == 1]
+plot(1:n_miss, cat_miss, xlim = c(1,n_miss), ylim = c(-0.2, 1.2),
+     xlab = "household", ylab = "actual value of missing cats", xaxt = "n")
+abline(h = 0.5, lty = 3)
+axis(1, at = c(1, 5, 10, 15, 20, 24), labels = c(1, 5, 10, 15, 20, 24))
+points(1:n_miss, c_imp_mu_miss, pch = 16, col = "tomato")
+for (i in 1:n_miss) {
+  lines(c(i,i), c(c_imp_PI_miss[1,i], c_imp_PI_miss[2,i]), 
+                          lwd = 4, col = col.alpha("tomato", 0.3))
+  lines(c(i,i), c(c_imp_mu_miss[i], cat_miss[i]), lwd = .5, col = "gray")
+}
+```
+
+This method can also be used to model discrete distributions of more than three events.
